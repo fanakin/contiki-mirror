@@ -40,7 +40,11 @@
 
 #include "contiki.h"
 
+#ifdef CONTIKI_TARGET_ARNNANOM
+#include "printf.h" /* For printf() tiny*/
+#else
 #include <stdio.h> /* For printf() */
+#endif
 /*---------------------------------------------------------------------------*/
 PROCESS(hello_world_process, "Hello world process");
 AUTOSTART_PROCESSES(&hello_world_process);
