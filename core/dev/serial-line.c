@@ -30,6 +30,7 @@
  *
  * @(#)$Id: serial-line.c,v 1.4 2010/02/23 18:26:26 adamdunkels Exp $
  */
+#include "printf.h"
 #include "dev/serial-line.h"
 #include <string.h> /* for memcpy() */
 
@@ -46,8 +47,14 @@
 #error Change SERIAL_LINE_CONF_BUFSIZE in contiki-conf.h.
 #endif
 
+#if CONTIKI_TARGET_ARNNANOM
+// minicom --noinit starts with 0x0d as char sent by carriage return
+#define IGNORE_CHAR(c) (c == 0x0a)
+#define END 0x0d
+#else
 #define IGNORE_CHAR(c) (c == 0x0d)
 #define END 0x0a
+#endif
 
 static struct ringbuf rxbuf;
 static uint8_t rxbuf_data[BUFSIZE];
