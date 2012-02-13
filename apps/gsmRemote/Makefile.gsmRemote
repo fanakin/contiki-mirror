@@ -1,0 +1,1 @@
+gsmRemote_src = WismoManager.c CommandManager.c
