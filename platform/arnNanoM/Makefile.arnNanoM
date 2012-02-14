@@ -5,8 +5,8 @@ endif
 CONTIKI_TARGET_DIRS = . dev
 CONTIKI_TARGET_MAIN = ${addprefix $(OBJECTDIR)/,contiki-main.o}
 
-CONTIKI_TARGET_SOURCEFILES = contiki-main.c clock.c leds.c leds-arch.c \
-                sensors.c irq.c printf.c
+CONTIKI_TARGET_SOURCEFILES = wismo218.c contiki-main.c clock.c leds.c leds-arch.c \
+                sensors.c irq.c printf.c eeprom.c
 
 CONTIKI_SOURCEFILES += $(CONTIKI_TARGET_SOURCEFILES)
 
