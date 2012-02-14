@@ -239,24 +239,13 @@ void _IIC2_(unsigned long par)
 	unsigned char tmp;
 	if (IIC2.ICIER.BIT.TIE && IIC2.ICSR.BIT.TDRE) {
 		IIC2.ICSR.BIT.TDRE = 0;
-// test test test
-//		TSTtdre++;
-//END
 		}
 	if (IIC2.ICIER.BIT.TEIE && IIC2.ICSR.BIT.TEND) {
 		IIC2.ICSR.BIT.TEND = 0;
-// test test test
-//		TSTtend++;
-//END
 		if (IIC2.ICIER.BIT.ACKBR) {
 			IIC2.ICSR.BIT.STOP = 0;
 			IIC2.ICIER.BIT.STIE = 1;
 			_STOP_();
-//BEGIN test test test
-//TSTcmd = nvm_state_str.nvm_cmd;
-//TSTsts = nvm_state_str.nvm_sts;
-//TSTicc = nvm_state_str.iicStatus;
-//END
 			nvm_state_str.nvm_sts = nvms_NONE;
 			nvm_state_str.nvm_cmd = nvmc_NONE;
 			return;
@@ -332,9 +321,6 @@ void _IIC2_(unsigned long par)
 		}
 	if (IIC2.ICIER.BIT.RIE && IIC2.ICSR.BIT.RDRF) {
 		IIC2.ICSR.BIT.RDRF = 0;
-// test test test
-//		TSTrdrf++;
-//END
 		switch (nvm_state_str.nvm_sts) {
 			case nvms_READINPROGRESS:
 				switch (nvm_state_str.iicStatus) {
@@ -363,9 +349,6 @@ void _IIC2_(unsigned long par)
 		}
 	if (IIC2.ICIER.BIT.STIE && IIC2.ICSR.BIT.STOP) {
 		IIC2.ICIER.BIT.STIE = 0;
-// test test test
-//		TSTstop++;
-//END
 		switch (nvm_state_str.nvm_sts) {
 			case nvms_READINPROGRESS:
 				switch (nvm_state_str.iicStatus) {
