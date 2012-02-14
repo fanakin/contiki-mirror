@@ -37,6 +37,7 @@
  */
 
 #include "contiki.h"
+#include "dev/wismo218.h"
 #include "dev/serial-line.h"
 #include <string.h>
 
@@ -45,24 +46,55 @@
 #else
 #include <stdio.h> /* For printf() */
 #endif
+#define MAX_CMD_PARAMS_ALLOWED_LEN	64
+static const char* CommandString[] = {
+  "+CSMS",
+  "READ",
+  "WRITE",
+  "LGON",
+  "LGOF",
+  "LYON",
+  "LYOF",
+  "LRON",
+  "LROF",
+  NULL
+};
+
+static int cmdParser(char* ln);
+
+process_event_t command_event;
+static wismo218Cmd_t Command;
 
 PROCESS(commandmanager_process, "CommandManager");
-
 //AUTOSTART_PROCESSES(&commandmanager_process);
 
 PROCESS_THREAD(commandmanager_process, ev, data)
 {
   PROCESS_EXITHANDLER(goto exit);
   PROCESS_BEGIN();
-
+  
+  command_event = process_alloc_event();
+  
   printf("CommandManager started.\n\r");
   while(1) {
     PROCESS_WAIT_EVENT();
     if (ev == serial_line_event_message) {
       if (data != NULL) {
 	char* Dt = data;
-	printf("%s\n\r",Dt);}
-	
+	//printf("%s:%s\n\r",__FUNCTION__,Dt);
+	if (!cmdParser(Dt)) {
+	  /* Broadcast event */
+	  process_post(PROCESS_BROADCAST, command_event, &Command);
+	  
+	  /* Wait until all processes have handled the serial line event */
+	  if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
+	    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
+	  }
+	}
+	else {
+	  printf("Unsupported Command\n\r");
+	}
+      }
     } 
   }
 
@@ -75,4 +107,45 @@ void
 CommandManager_Init(void)
 {
   process_start(&commandmanager_process, NULL);  
+}
+
+int cmdParser(char* ln)
+{
+  int i;
+  int ptr = 0;
+  char* pCmd;
+  Command.Cmd = NULL;
+  Command.Params = NULL;
+  for (i = 0,pCmd = ((char*)CommandString[0]); pCmd != NULL; ) {
+    if (!strncmp(ln,pCmd,strlen(pCmd))) { // command found
+      Command.Cmd = pCmd;
+      ptr += strlen(pCmd);  
+      break;
+    }
+    pCmd = (char*)CommandString[++i];
+  }
+  if (pCmd == NULL) return -1;
+  if (strlen((const char*)&ln[ptr]) < MAX_CMD_PARAMS_ALLOWED_LEN) {
+    Command.Params = (&(ln[ptr]));
+    return 0;
+  }
+  else return -2;
+#if 0  
+  if (ln[ptr] == '=') {
+    if (ln[ptr+1] == '?') { // Supported configuration request
+      ln[ptr+2] = 0;
+      Command.Params = (&(ln[ptr]));
+      return 0;
+    }
+    else { // che the line is null terminated
+      Command.Params = (&(ln[ptr]));
+      return 0;
+    }
+  }
+  else if (ln[ptr] == '?') { // Current setting request
+    Command.Params = (&(ln[ptr]));
+    return 0;
+  }
+  else return -2;
+#endif
 }
