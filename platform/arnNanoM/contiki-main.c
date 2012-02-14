@@ -44,6 +44,7 @@
 
 #include "dev/button-sensor.h"
 #include "dev/watchdog.h"
+#include "dev/leds.h"
 #include "dev/pir-sensor.h"
 #include "dev/vib-sensor.h"
 #include "dev/button-sensor.h"
@@ -80,7 +81,7 @@ os_main(void)
 
   h836064_cpu_init();
   watchdog_periodic();
-  
+  leds_init();
   init_printf(NULL,pf_putc);
  
   printf("Starting Contiki...\n\r");
@@ -111,10 +112,10 @@ os_main(void)
   
   
   while(1) {
-    int n;
+    /*int n;*/
     watchdog_periodic();
 
-    n = process_run();
+    /*n = */process_run();
 
     etimer_request_poll();
   }
