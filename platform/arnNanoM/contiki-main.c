@@ -47,8 +47,10 @@
 #include "dev/pir-sensor.h"
 #include "dev/vib-sensor.h"
 #include "dev/button-sensor.h"
+#include "dev/wismo218.h"
 #include "../../cpu/h836064/inh8300h.h"
 #include "../../cpu/h836064/dev/sci3-putchar.h"
+#include "../../cpu/h836064/dev/sci3_2-putchar.h"
 #include "printf.h"
 
 void h836064_cpu_init(void);
@@ -95,6 +97,9 @@ os_main(void)
   sci3_set_input(serial_line_input_byte);
   serial_line_init();
   
+  sci3_2_set_input(wismo128_line_input_byte);
+  wismo218_init();
+
   watchdog_periodic();
   reset_imask_ccr();
 
