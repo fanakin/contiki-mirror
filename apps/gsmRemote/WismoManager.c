@@ -36,15 +36,26 @@
  *           $Revision: 0.1 $
  */
 
+#include <string.h>
+
 #include "contiki.h"
 #include "dev/serial-line.h"
-#include <string.h>
+#include "dev/eeprom.h"
+#include "dev/leds.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
 #include "printf.h" /* For printf() tiny*/
 #else
 #include <stdio.h> /* For printf() */
 #endif
+
+#include "CommandManager.h"
+
+
+static wismo218Ans_t Answer;
+static void parserAns(char* Data, wismo218Ans_t* Ans);
+static void parserCmdParams(wismo218Cmd_t* Cmd,char* bff);
+
 
 PROCESS(wismomanager_process, "WismoManager");
 
@@ -58,11 +69,20 @@ PROCESS_THREAD(wismomanager_process, ev, data)
   printf("WismoManager started.\n\r");
   while(1) {
     PROCESS_WAIT_EVENT();
-//    if (ev == wismo_event_message) {
-//      if (data != NULL) {
-//	char* Dt = data;
-//	printf("%s\n\r",Dt);}
-//    } 
+    if (ev == command_event) {
+      if (data != NULL) {
+	wismo218Cmd_t* Dt = data;
+	// send command to wismo
+	printf("%s:%s\n\r","Command",Dt->Cmd);
+	printf("%s:%s\n\r","Params",Dt->Params);
+	parserCmdParams(Dt,NULL);
+      }
+    }
+    else if (ev == wismo128_event_message) {
+	char* Dt = data;
+      // Parse the answer of wismo
+      parserAns(Dt,&Answer);
+    }
   }
 
  exit:
@@ -75,4 +95,47 @@ void
 WismoManager_Init(void)
 {
   process_start(&wismomanager_process, NULL);
+}
+
+
+void
+parserAns(char* Data, wismo218Ans_t* Ans)
+{
+  return;
+}
+
+void
+parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
+{
+  if (!strcmp(Cmd->Cmd,"READ")) {
+    unsigned char bff[16];
+    unsigned char i;
+    eeprom_read(0,bff,sizeof(bff));
+    for (i = 0; i < sizeof(bff); i++) {
+      printf("0x%2x\r\n",bff[i]);
+    }
+  }
+  else if (!strcmp(Cmd->Cmd,"WRITE")) {
+    unsigned char bff[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36};
+    eeprom_write(0,bff,sizeof(bff));
+    printf("eeprom write done.\r\n");
+  }
+  else if (!strcmp(Cmd->Cmd,"LGON")) {
+    leds_on(LEDS_GREEN);
+  }
+  else if (!strcmp(Cmd->Cmd,"LGOF")) {
+    leds_off(LEDS_GREEN);
+  }
+  else if (!strcmp(Cmd->Cmd,"LYON")) {
+    leds_on(LEDS_YELLOW);
+  }
+  else if (!strcmp(Cmd->Cmd,"LYOF")) {
+    leds_off(LEDS_YELLOW);
+  }
+  else if (!strcmp(Cmd->Cmd,"LRON")) {
+    leds_on(LEDS_RED);
+  }
+  else if (!strcmp(Cmd->Cmd,"LROF")) {
+    leds_off(LEDS_RED);
+  }
 }
