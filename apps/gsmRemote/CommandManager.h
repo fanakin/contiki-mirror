@@ -41,7 +41,24 @@
 #ifndef __COMMANDMANAGER_H__
 #define __COMMANDMANAGER_H__
 
+#include "dev/wismo218.h"
 
+/**
+ * Event posted when an message is received by wismo128.
+ *
+ * when an answer is send by wismo128 an event is posted.
+ * A pointer to an aswer buffer is sent togheter with the event.
+ */
+extern process_event_t command_event;
+
+
+/**
+ * It starts the process of command manager
+ *
+ * This function is able to collect all the command incoming to the
+ * system and it manages them.
+ * 
+ */
 void
 CommandManager_Init(void);
 
