@@ -49,12 +49,13 @@
 #include "dev/vib-sensor.h"
 #include "dev/button-sensor.h"
 #include "dev/wismo218.h"
-#include "../../cpu/h836064/inh8300h.h"
-#include "../../cpu/h836064/dev/sci3-putchar.h"
-#include "../../cpu/h836064/dev/sci3_2-putchar.h"
+#include "dev/sci3-putchar.h"
+#include "dev/sci3_2-putchar.h"
 #include "printf.h"
 
+void irq_init(void);
 void h836064_cpu_init(void);
+
 /*---------------------------------------------------------------------------*/
 static void
 print_processes(struct process * const processes[])
@@ -102,8 +103,7 @@ os_main(void)
   wismo218_init();
 
   watchdog_periodic();
-  reset_imask_ccr();
-
+  irq_init();
   printf(CONTIKI_VERSION_STRING " started.\r\n");
 
   print_processes(autostart_processes);
