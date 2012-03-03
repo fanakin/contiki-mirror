@@ -4,3 +4,5 @@ Makefile.gsmRemote~
 WismoManager.c~
 WismoManager.h~
 .hide
+CommandList.h~
+CommandList.c~

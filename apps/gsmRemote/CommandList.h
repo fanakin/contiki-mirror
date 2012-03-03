@@ -38,28 +38,23 @@
 
 #include "contiki.h"
 
-#ifndef __COMMANDMANAGER_H__
-#define __COMMANDMANAGER_H__
+#ifndef __COMMANDLIST_H__
+#define __COMMANDLIST_H__
+typedef enum arnGsmRemoteCommandGruop {
+	aGRCG_none = 0, /*!< none group */
+	aGRCG_generic, /*!< generic group; help, ... */
+	aGRCG_eeprom, /*!< eeprom group; eeprom management commands */
+	aGRCG_wismo218, /*!< wism218 management and AT COMMANDS group */
+	aGRCG_wismo218_CTRLZ, /*!< wism218 management and AT COMMANDS group but with an extention to insert message text*/
+	aGRCG_unknown /*!< unknown group */
+} arnGsmRemoteCommandGruop_t;
 
-#include "dev/wismo218.h"
+typedef struct arnGsmRemoteCommand {
+	arnGsmRemoteCommandGruop_t Gruop;
+	const char *CommandString;
+	const char *HelpString;
+} arnGsmRemoteCommand_t;
 
-/**
- * Event posted when an message is received addressed wismo128.
- *
- * when a command is send to wismo128 a wismo218_command_event is posted.
- * A pointer to the command structre is sent togheter with the event.
- */
-extern process_event_t wismo218_command_event;
-
-
-/**
- * It starts the process of command manager
- *
- * This function is able to collect all the command incoming to the
- * system and it manages them.
- * 
- */
-void
-CommandManager_Init(void);
-
+#define MAX_CMD_PARAMS_ALLOWED_LEN	128
+extern const arnGsmRemoteCommand_t CommandList[];
 #endif

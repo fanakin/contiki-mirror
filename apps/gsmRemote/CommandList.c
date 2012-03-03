@@ -26,40 +26,57 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: CommandManager.h,v 0.1 2012/02/13 18:18:51 fabiogiovagnini Exp $
+ * $Id: CommandList.c,v 1.0 2012/03/01 18:18:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
- * Author  : Fabio GIovagnini, Aurion s.r.l. (Bologna - Italy)
- * Created : 2012-02-13
- * Updated : $Date: 2012/02/13 18:18:51 $
+ * Author  : Fabio Giovagnini, Aurion s.r.l. (Bologna - Italy)
+ * Created : 2012-03-01
+ * Updated : $Date: 2012/03/01 18:18:51 $
  *           $Revision: 1.0 $
  */
 
-#include "contiki.h"
 
-#ifndef __COMMANDMANAGER_H__
-#define __COMMANDMANAGER_H__
+#include "CommandList.h"
 
-#include "dev/wismo218.h"
-
-/**
- * Event posted when an message is received addressed wismo128.
- *
- * when a command is send to wismo128 a wismo218_command_event is posted.
- * A pointer to the command structre is sent togheter with the event.
- */
-extern process_event_t wismo218_command_event;
-
-
-/**
- * It starts the process of command manager
- *
- * This function is able to collect all the command incoming to the
- * system and it manages them.
- * 
- */
-void
-CommandManager_Init(void);
-
+#ifdef CONTIKI_TARGET_ARNNANOM
+#include "printf.h" /* For printf() tiny*/
+#else
+#include <stdio.h> /* For printf() */
 #endif
+#define COMMAND_LIST_VERSION "Command List 0.1\r\n"
+#define COMMAND_GENERAL_DESCR "Tutti i comandi accettano l'opzione ? e =?. \
+ES. +CPIN? oppure +CPIN=?\
+\r\n"
+const arnGsmRemoteCommand_t CommandList[] = {
+  {aGRCG_generic,"HELP",COMMAND_LIST_VERSION COMMAND_GENERAL_DESCR},
+  {aGRCG_wismo218,"+CSMS",""},
+  {aGRCG_wismo218,"+CSTA",""},
+  {aGRCG_wismo218,"+CPIN","Stato del PIN"},
+  {aGRCG_wismo218,"+CSQ","Livello di segnale. Non accetta ?"},
+  {aGRCG_wismo218,"+CIND",""},
+  {aGRCG_wismo218,"+CGMI",""},
+  {aGRCG_wismo218,"+CGMM",""},
+  {aGRCG_wismo218,"+CGMR",""},
+  {aGRCG_wismo218,"+CGSN",""},
+  {aGRCG_wismo218,"+CSMS",""},
+  {aGRCG_wismo218,"+CPMS",""},
+  {aGRCG_wismo218,"+CMGF",""},
+  {aGRCG_wismo218,"+CSCA",""},
+  {aGRCG_wismo218,"+CSCB",""},
+  {aGRCG_wismo218,"+CSMP",""},
+  {aGRCG_wismo218,"+CSDH",""},
+  {aGRCG_wismo218,"+CSAS",""},
+  {aGRCG_wismo218,"+CRES",""},
+  {aGRCG_wismo218_CTRLZ,"+CMGS","Invia messaggio diretto. Ex."},
+  {aGRCG_wismo218,"+CMSS","Invia messaggio da memoria."},
+  {aGRCG_wismo218_CTRLZ,"+CMGW","Scrive messaggio in memoria."},
+  {aGRCG_wismo218,"+CMGD","Cancella messaggio."},
+  {aGRCG_wismo218,"+CNMI",""},
+  {aGRCG_wismo218,"+CMGL","Mostra lista messaggi in memoria"},
+  {aGRCG_wismo218,"WSMOF",""},
+  {aGRCG_wismo218,"WSMON",""},
+  {aGRCG_wismo218,"WSMRST",""},
+  {NULL}
+};
+
