@@ -137,6 +137,13 @@ parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
     eeprom_write(0,bff,sizeof(bff));
     printf("eeprom write done.\r\n");
   }
+  else if (!strcmp(Cmd->Cmd,"READ")) {
+    int i;
+    unsigned char bff[16];
+    eeprom_read(0,bff,sizeof(bff));
+    for (i = 0; i < 16; i++) printf("%d ",bff[i]);
+    printf("\r\n");
+  }
   else if (!strcmp(Cmd->Cmd,"WSMON")) {
     wismo218_On();
   }

@@ -37,6 +37,8 @@
  */
 
 
+extern void printHelp(void*);
+
 #include "CommandList.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
@@ -49,34 +51,36 @@
 ES. +CPIN? oppure +CPIN=?\
 \r\n"
 const arnGsmRemoteCommand_t CommandList[] = {
-  {aGRCG_generic,"HELP",COMMAND_LIST_VERSION COMMAND_GENERAL_DESCR},
-  {aGRCG_wismo218,"+CSMS",""},
-  {aGRCG_wismo218,"+CSTA",""},
-  {aGRCG_wismo218,"+CPIN","Stato del PIN"},
-  {aGRCG_wismo218,"+CSQ","Livello di segnale. Non accetta ?"},
-  {aGRCG_wismo218,"+CIND",""},
-  {aGRCG_wismo218,"+CGMI",""},
-  {aGRCG_wismo218,"+CGMM",""},
-  {aGRCG_wismo218,"+CGMR",""},
-  {aGRCG_wismo218,"+CGSN",""},
-  {aGRCG_wismo218,"+CSMS",""},
-  {aGRCG_wismo218,"+CPMS",""},
-  {aGRCG_wismo218,"+CMGF",""},
-  {aGRCG_wismo218,"+CSCA",""},
-  {aGRCG_wismo218,"+CSCB",""},
-  {aGRCG_wismo218,"+CSMP",""},
-  {aGRCG_wismo218,"+CSDH",""},
-  {aGRCG_wismo218,"+CSAS",""},
-  {aGRCG_wismo218,"+CRES",""},
-  {aGRCG_wismo218_CTRLZ,"+CMGS","Invia messaggio diretto. Ex."},
-  {aGRCG_wismo218,"+CMSS","Invia messaggio da memoria."},
-  {aGRCG_wismo218_CTRLZ,"+CMGW","Scrive messaggio in memoria."},
-  {aGRCG_wismo218,"+CMGD","Cancella messaggio."},
-  {aGRCG_wismo218,"+CNMI",""},
-  {aGRCG_wismo218,"+CMGL","Mostra lista messaggi in memoria"},
-  {aGRCG_wismo218,"WSMOF",""},
-  {aGRCG_wismo218,"WSMON",""},
-  {aGRCG_wismo218,"WSMRST",""},
-  {NULL}
+  {aGRCG_generic,"HELP",COMMAND_LIST_VERSION COMMAND_GENERAL_DESCR,printHelp},
+  {aGRCG_wismo218,"+CSMS","",NULL},
+  {aGRCG_wismo218,"+CSTA","",NULL},
+  {aGRCG_wismo218,"+CPIN","Stato del PIN",NULL},
+  {aGRCG_wismo218,"+CSQ","Livello di segnale. Non accetta ?",NULL},
+  {aGRCG_wismo218,"+CIND","",NULL},
+  {aGRCG_wismo218,"+CGMI","",NULL},
+  {aGRCG_wismo218,"+CGMM","",NULL},
+  {aGRCG_wismo218,"+CGMR","",NULL},
+  {aGRCG_wismo218,"+CGSN","",NULL},
+  {aGRCG_wismo218,"+CSMS","",NULL},
+  {aGRCG_wismo218,"+CPMS","",NULL},
+  {aGRCG_wismo218,"+CMGF","",NULL},
+  {aGRCG_wismo218,"+CSCA","",NULL},
+  {aGRCG_wismo218,"+CSCB","",NULL},
+  {aGRCG_wismo218,"+CSMP","",NULL},
+  {aGRCG_wismo218,"+CSDH","",NULL},
+  {aGRCG_wismo218,"+CSAS","",NULL},
+  {aGRCG_wismo218,"+CRES","",NULL},
+  {aGRCG_wismo218_CTRLZ,"+CMGS","Invia messaggio diretto. Due spazi tre numero e testo. Ex. +CMGS=\"+393341234567\"  PROVA MSG",NULL},
+  {aGRCG_wismo218,"+CMSS","Invia messaggio da memoria.",NULL},
+  {aGRCG_wismo218_CTRLZ,"+CMGW","Scrive messaggio in memoria.",NULL},
+  {aGRCG_wismo218,"+CMGD","Cancella messaggio.",NULL},
+  {aGRCG_wismo218,"+CNMI","",NULL},
+  {aGRCG_wismo218,"+CMGL","Mostra lista messaggi in memoria",NULL},
+  {aGRCG_wismo218,"WSMOF","",NULL},
+  {aGRCG_wismo218,"WSMON","",NULL},
+  {aGRCG_wismo218,"WSMRST","",NULL},
+  {aGRCG_wismo218,"WRITE","",NULL},
+  {aGRCG_wismo218,"READ","",NULL},
+  {aGRCG_none,NULL,NULL,NULL}
 };
 

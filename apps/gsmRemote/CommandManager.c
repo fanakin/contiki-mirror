@@ -30,7 +30,7 @@
  *
  * -----------------------------------------------------------------
  *
- * Author  : Fabio GIovagnini, Aurion s.r.l. (Bologna - Italy)
+ * Author  : Fabio Giovagnini, Aurion s.r.l. (Bologna - Italy)
  * Created : 2012-02-13
  * Updated : $Date: 2012/02/13 18:18:51 $
  *           $Revision: 1.0 $
@@ -221,18 +221,18 @@ PROCESS_THREAD(commandmanager_process, ev, data)
 	) {
 	  /* Broadcast event */
 	  process_post(PROCESS_BROADCAST, wismo218_command_event, &Wismo218Command);
-	  
-	  /* Wait until all processes have handled the serial line event */
-	  if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
-	    PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
-	  }
 	}
 	else if (cmdParser(Dt) == aGRCG_unknown) {
 	  printf("Unsupported Command\n\r");
 	}
+	else if (cmdParser(Dt) == aGRCG_generic) {}
 	else {
 	  printf("Unimplemented Command\n\r");
 	}
+      }
+      /* Wait until all processes have handled the serial line event */
+      if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
+	PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
       }
     } 
   }
@@ -270,7 +270,7 @@ arnGsmRemoteCommandGruop_t cmdParser(char* ln)
   }
   if (pCmd == NULL) return aGRCG_unknown;
   switch (foundGroup) {
-    case aGRCG_generic: break;
+    case aGRCG_generic: pCmd->handler(NULL); return foundGroup;
     case aGRCG_eeprom: break;
     case aGRCG_wismo218:
       if (strlen((const char*)&ln[ptr]) < MAX_CMD_PARAMS_ALLOWED_LEN) {
@@ -302,5 +302,19 @@ arnGsmRemoteCommandGruop_t cmdParser(char* ln)
 }
 
 
+void printHelp(void* p)
+{
+  int i;
+  arnGsmRemoteCommand_t* pCmd;
+  struct timer tmr;
+  
+  printf("%s\n\r",CommandList[0].HelpString);
+  for (i = 1, pCmd = (arnGsmRemoteCommand_t*)(&CommandList[1]); pCmd->CommandString != NULL; ) {
+    printf("%s:%s\n\r",CommandList[i].CommandString,CommandList[i].HelpString);
+    pCmd = (arnGsmRemoteCommand_t*)(&(CommandList[++i]));
+    timer_set(&tmr,100);
+    while (!timer_expired(&tmr)) ;
+  }
+}
 #endif
 
