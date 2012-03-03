@@ -33,11 +33,11 @@
 #ifndef __MTARCH_H__
 #define __MTARCH_H__
 
-#define MTARCH_STACKSIZE 128
+#define MTARCH_STACKSIZE 64
 
 struct mtarch_thread {
-  unsigned short stack[MTARCH_STACKSIZE];
-  unsigned short *sp;
+  unsigned long stack[MTARCH_STACKSIZE];
+  unsigned long sp;
   void *data;
   void (* function)(void *);
 };

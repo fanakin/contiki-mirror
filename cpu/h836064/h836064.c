@@ -36,10 +36,16 @@
 #include <signal.h>
 #include <sys/unistd.h>
 #include "dev/watchdog.h"
+#include "dev/eeprom.h"
+
+#include "dev/sci3.h"
+#include "dev/sci3_2.h"
 
 void h836064_cpu_init(void)
 {
     watchdog_init();
     sci3_init(38400);
+    sci3_2_init(9600);
     clock_init();
+    eeprom_init();
 }

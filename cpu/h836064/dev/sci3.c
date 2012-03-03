@@ -148,12 +148,10 @@ SCI3.SCR3.BYTE |= 0x44; /*RxI Enabled Teie enabled*/
 void _SCI3_(void)
 {
 if (SCI3.SSR.BIT.RDRF) {
-  uint8_t c;
   SCI3.SSR.BIT.RDRF = 0;
   reset_imask_ccr();
-  c = SCI3.RDR;
   if(sci3_input_handler != NULL) {
-    if(sci3_input_handler(c)) {;}
+    if(sci3_input_handler(SCI3.RDR)) {;}
   }
 }
 else if (SCI3.SSR.BIT.OER || SCI3.SSR.BIT.FER || SCI3.SSR.BIT.PER) {

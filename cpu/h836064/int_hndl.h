@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 extern void _SCI3_ (void);
+extern void _SCI3_2_ (void);
 
 #ifdef __cplusplus
 };

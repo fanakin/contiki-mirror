@@ -10,42 +10,6 @@
 
 #define _INTHNDL_H
 #include "int_hndl.h"
-void lowlevelinit(void)
-{
-	//BEGIN abilitazione whatch dog. Ultima cosa da fare prima di andare nel main loop
-	WDT.TCSRWD.BYTE = 0x10; 
-	//END
-
-	// settaggio porte non usate come output e basse
-	IO.PCR1 = (BIT7 | BIT6 | BIT5 | BIT4 | BIT3 | BIT2 | BIT0); // P11 commegato per eventuale PWM
-	IO.PDR1.BYTE &= ~0xFD;
-
-	IO.PCR2 = (BIT4 | BIT3 | BIT0);
-	IO.PDR2.BYTE &= ~0x19;
-
-	IO.PCR3 = (BIT7 | BIT6 | BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0);
-	IO.PDR3.BYTE = 0x00;
-
-	IO.PCR5 = (BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0);
-	IO.PDR5.BYTE &= ~0x3F;
-
-	// P60 Relay0
-	// P61 Relay1
-	// P62 RelayH
-	// P66 TXCT-
-	IO.PCR6 = (BIT6 | BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0);
-	IO.PDR6.BYTE &= ~0x38;
-	IO.PDR6.BYTE |= 0x47; // TXCT Alto
-
-	IO.PCR7 = (BIT6 | BIT5 | BIT4);
-	IO.PDR7.BYTE &= ~0x70;
-
-	//	P86 usata come out per notWC signal della m24c01
-	IO.PCR8 = (BIT7 | BIT6);
-	IO.PDR8.BYTE &= ~0x80;
-
-}
-
 
 //BEGIN interrupt hndl
 void _NMI_ (void){}
@@ -62,13 +26,13 @@ void _IRQ3_ (void){}
 void _WKP_ (void){}
 void _RTC_OV_ (void){}
 void _TV_I_ (void){}
-void _ADI_ (void){/*A_to_D_Inth(&KernelValue);*/}
+void _ADI_ (void){}
 // void _SCI3_ (void){}
-void _IIC2_ (void){/*m24c01Mem.Int_Hndl(0);*/}
+//void _IIC2_ (void){}
 void _TZ_ITMZ0_ (void){}
-void _TZ_ITMZ1_ (void){/*tms3705a_IntH(0);*/}
-//void _TB1_TMIB1_ (void){/*ClockSystem(&KernelValue);*/}
-void _SCI3_2_ (void){}
+void _TZ_ITMZ1_ (void){}
+//void _TB1_TMIB1_ (void){}
+//void _SCI3_2_ (void){}
 //END interrupt hndl
 
 

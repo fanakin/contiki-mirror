@@ -31,11 +31,13 @@
  * @(#)$Id: mtarch.c,v 1.6 2008/11/21 10:28:32 fros4943 Exp $
  */
 
+#include "inh8300h.h"
+
 #include <stdio.h>
 #include "sys/mt.h"
 
-static unsigned short *sptmp;
-static struct mtarch_thread *running;
+static unsigned long sptmp = 0;
+static struct mtarch_thread *running = 0;
 
 /*--------------------------------------------------------------------------*/
 void
@@ -56,21 +58,20 @@ mtarch_start(struct mtarch_thread *t,
 	     void (*function)(void *), void *data)
 {
   int i;
-
   for(i = 0; i < MTARCH_STACKSIZE; ++i) {
     t->stack[i] = i;
   }
 
-  t->sp = &t->stack[MTARCH_STACKSIZE - 1];
+  t->sp = (unsigned long)((void*)&(t->stack[MTARCH_STACKSIZE - 1]));
 
-  *t->sp = (unsigned short)mt_exit;
-  --t->sp;
+  *((unsigned long*)(t->sp)) = (unsigned long)mt_exit;
+  t->sp -= sizeof(unsigned long);
 
-  *t->sp = (unsigned short)mtarch_wrapper;
-  --t->sp;
+  *((unsigned long*)(t->sp)) = (unsigned long)mtarch_wrapper;
+  t->sp -= sizeof(unsigned long);
 
   /* Space for registers. */
-  t->sp -= 6;
+  t->sp -= (6 * sizeof(unsigned long));
 
   /* Store function and argument (used in mtarch_wrapper) */
   t->data = data;
@@ -81,7 +82,7 @@ mtarch_start(struct mtarch_thread *t,
 static void
 sw(void)
 {
-
+  //set_imask_ccr();
   sptmp = running->sp;
   
   __asm__("push.l er0");
@@ -102,7 +103,7 @@ sw(void)
   __asm__("pop.l er2");
   __asm__("pop.l er1");
   __asm__("pop.l er0");
-
+  //reset_imask_ccr();
 }
 /*--------------------------------------------------------------------------*/
 void

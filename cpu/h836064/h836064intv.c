@@ -40,8 +40,46 @@ __asm__(
 ".endm\n"
 );
 
+/*
+__asm__(
+".macro BEGIN_ISR\n"
+"push.w r0\n"
+"push.w e0\n"
+"push.w r1\n"
+"push.w e1\n"
+"push.w r2\n"
+"push.w e2\n"
+"push.w r3\n"
+"push.w e3\n"
+"push.w r4\n"
+"push.w e4\n"
+"push.w r5\n"
+"push.w e5\n"
+"push.w r6\n"
+"push.w e5\n"
+".endm\n"
+);
 
-
+__asm__(
+".macro END_ISR\n"
+"pop.w e6\n"
+"pop.w r6\n"
+"pop.w e5\n"
+"pop.w r5\n"
+"pop.w e4\n"
+"pop.w r4\n"
+"pop.w e3\n"
+"pop.w r3\n"
+"pop.w e2\n"
+"pop.w r2\n"
+"pop.w e1\n"
+"pop.w r1\n"
+"pop.w e0\n"
+"pop.w r0\n"
+"rte\n"
+".endm\n"
+);
+*/
 
 __asm__(
 ".section .text\n"

@@ -4,14 +4,15 @@ CONTIKI_CPU=$(CONTIKI)/cpu/h836064
 
 CONTIKI_CPU_DIRS = . dev
 
-CONTIKI_SOURCEFILES += h836064.c h836064intv.c int_hdnl.c mtarch.c rtimer-arch.c watchdog.c crt0.S sci3.c sci3-putchar.c
+CONTIKI_SOURCEFILES += h836064.c h836064intv.c int_hdnl.c mtarch.c rtimer-arch.c watchdog.c crt0.S sci3.c sci3_2.c sci3-putchar.c
 
 GCC_BASEDIR = /usr/local
-GCC_VERSION = 4.0.1
+#GCC_VERSION = 4.0.1
+GCC_VERSION = 4.6.2
 GCC_CROSS = h8300-elf
 BINDIR = $(GCC_BASEDIR)/gcc-$(GCC_VERSION)/bin
-SYSLIBDIR =/usr/local/gcc-4.0.1/$(GCC_CROSS)/lib/h8300h/normal
-LIBGCCDIR =/usr/local/gcc-4.0.1/lib/gcc/$(GCC_CROSS)/4.0.1/h8300h/normal
+SYSLIBDIR =$(GCC_BASEDIR)/gcc-$(GCC_VERSION)/$(GCC_CROSS)/lib/h8300h/normal
+LIBGCCDIR =$(GCC_BASEDIR)/gcc-$(GCC_VERSION)/lib/gcc/$(GCC_CROSS)/$(GCC_VERSION)/h8300h/normal
 
 
 TARGET_STARTFILES += $(OBJECTDIR)/h836064intv.o
