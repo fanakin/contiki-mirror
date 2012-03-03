@@ -42,24 +42,24 @@
 #include "sys/timer.h"
 
 #define ON_NOT_OFF	IO.PDR1.BIT.B0
-#define NOT_RESET	IO.PDR1.BIT.B0
+#define NOT_RESET	IO.PDR1.BIT.B2
 
 void 
 wismo218_Init(void)
 {
-	wismo218_Off();
+	wismo218_On();
 }
 
 void
 wismo218_On(void)
 {
-	ON_NOT_OFF = 0;
+	ON_NOT_OFF = 1;
 }
 
 void
 wismo218_Off(void)
 {
-	ON_NOT_OFF = 1;
+	ON_NOT_OFF = 0;
 }
 
 void 
