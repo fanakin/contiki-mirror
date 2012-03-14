@@ -181,6 +181,7 @@ int cmdParser(char* ln)
 #include "contiki.h"
 #include "dev/wismo218.h"
 #include "dev/serial-line.h"
+#include "dev/halleffect-sensor.h"
 #include "CommandList.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
@@ -234,7 +235,7 @@ PROCESS_THREAD(commandmanager_process, ev, data)
       if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
 	PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
       }
-    } 
+    }
   }
 
  exit:

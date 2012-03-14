@@ -49,10 +49,13 @@
 #include <stdio.h> /* For printf() */
 #endif
 
+#include "WismoManager.h"
 #include "CommandManager.h"
 
+process_event_t wismo218_status_event;
+process_event_t wismo218_data_event;
 static struct etimer timer;
-static enum {start,w_of,w_on,w_reset,done} initStstus = start;
+static wismo218_status_t Status = init_start;
 
 static wismo218Ans_t Answer;
 static wismo218Cmd_t* Command;
@@ -71,17 +74,21 @@ PROCESS_THREAD(wismomanager_process, ev, data)
 
   printf("WismoManager started.\n\r");
   etimer_set(&timer, CLOCK_SECOND / 2);
+  wismo218_status_event = process_alloc_event();
+  wismo218_data_event = process_alloc_event();
   
   while(1) {
     PROCESS_WAIT_EVENT();
     if (ev == PROCESS_EVENT_TIMER) {
-      switch (initStstus) {
-	case start: initStstus = w_of; wismo218_Off(); etimer_set(&timer, CLOCK_SECOND / 2);break;
-	case w_of: initStstus = w_on; wismo218_On(); etimer_set(&timer, CLOCK_SECOND / 2);break;
-	case w_on: initStstus = w_reset; wismo218_Reset(); etimer_set(&timer, CLOCK_SECOND / 2);break;
-	case w_reset: initStstus = done;printf("wismo reset done.\n\r");break;
+      switch (Status) {
+	case init_start: Status = init_w_of; wismo218_Off(); etimer_set(&timer, CLOCK_SECOND / 2); break;
+	case init_w_of: Status = init_w_on; wismo218_On(); etimer_set(&timer, CLOCK_SECOND / 2); break;
+	case init_w_on: Status = init_w_reset; wismo218_Reset(); etimer_set(&timer, CLOCK_SECOND / 2); break;
+	case init_w_reset: Status = init_done; break;
 	default: break; 
+	/* Broadcast event */
       }
+    process_post(PROCESS_BROADCAST, wismo218_status_event, &Status); 
     }
     else if (ev == wismo218_command_event) {
       if (data != NULL) {
@@ -99,6 +106,7 @@ PROCESS_THREAD(wismomanager_process, ev, data)
       char* Dt = data;
       // Parse the answer of wismo
       parserAns(Dt,&Answer);
+      process_post(PROCESS_BROADCAST, wismo218_data_event, &Answer); 
     }
   }
 
@@ -129,6 +137,7 @@ void
 parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
 {
   if (!strncmp(Cmd->Cmd,"+",1)) {
+    printf("%s\n\r",Cmd->Cmd);
     if (Cmd->ActivationFlags & 0x01) {if (wismo218_sendCommand(Cmd->Cmd) < 0) printf("%s: error\r\n",Cmd->Cmd);}
     if (Cmd->ActivationFlags & 0x02) {if (wismo218_sendParams(Cmd->Params) < 0) printf("%s - %s: error\r\n",Cmd->Cmd,Cmd->Params);}
   }

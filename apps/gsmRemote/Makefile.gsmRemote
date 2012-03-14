@@ -1,1 +1,1 @@
-gsmRemote_src = WismoManager.c CommandManager.c CommandList.c
+gsmRemote_src = WismoManager.c CommandManager.c CommandList.c AntonelloApp.c

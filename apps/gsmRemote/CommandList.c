@@ -76,6 +76,7 @@ const arnGsmRemoteCommand_t CommandList[] = {
   {aGRCG_wismo218,"+CMGD","Cancella messaggio.",NULL},
   {aGRCG_wismo218,"+CNMI","",NULL},
   {aGRCG_wismo218,"+CMGL","Mostra lista messaggi in memoria",NULL},
+  {aGRCG_wismo218,"+CCLK","Agisce su RTC",NULL},
   {aGRCG_wismo218,"WSMOF","",NULL},
   {aGRCG_wismo218,"WSMON","",NULL},
   {aGRCG_wismo218,"WSMRST","",NULL},

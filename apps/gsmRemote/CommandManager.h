@@ -44,7 +44,7 @@
 #include "dev/wismo218.h"
 
 /**
- * Event posted when an message is received addressed wismo128.
+ * Event posted when an message is received addressed to wismo128.
  *
  * when a command is send to wismo128 a wismo218_command_event is posted.
  * A pointer to the command structre is sent togheter with the event.

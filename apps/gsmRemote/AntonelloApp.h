@@ -26,44 +26,39 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: WismoManager.h,v 0.1 2012/02/13 18:18:51 fabiogiovagnini Exp $
+ * $Id: CommandManager.h,v 0.1 2012/02/13 18:18:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
- * Author  : Fabio Giovagnini, Aurion s.r.l. (Bologna - Italy)
+ * Author  : Fabio GIovagnini, Aurion s.r.l. (Bologna - Italy)
  * Created : 2012-02-13
  * Updated : $Date: 2012/02/13 18:18:51 $
- *           $Revision: 0.1 $
+ *           $Revision: 1.0 $
  */
 
 #include "contiki.h"
 
-#ifndef __WISMOMANAGER_H__
-#define __WISMOMANAGER_H__
-/**
- * Event posted when a wismo218 status change.
- *
- * when wismo218 change is status a event is posted by wismo218 and wismo218_status_event is posted.
- * A pointer to the status is sent togheter with the event.
- */
-extern process_event_t wismo218_status_event;
+#ifndef __ANTONELLOAPP_H__
+#define __ANTONELLOAPP_H__
 
-typedef enum wismo218_status {
-  init_start = 0,
-  init_w_of,
-  init_w_on,
-  init_w_reset,
-  init_done} wismo218_status_t;
+#include "dev/wismo218.h"
+
+typedef enum AntonelloAppStatus {
+  antApp_Init = 0,
+  antApp_Initdone,
+  antApp_Datagot,
+  antApp_Idle
+}
+AntonelloAppStatus_t;
 
 /**
- * Event posted when a wismo218 data are available.
+ * It starts the process of command manager
  *
- * when wismo218 makes available new data anevent is posted by wismo218 and wismo218_data_event is posted.
- * A pointer to the answer is sent togheter with the event.
+ * This function is able to collect all the command incoming to the
+ * system and it manages them.
+ * 
  */
-extern process_event_t wismo218_data_event;
-
 void
-WismoManager_Init(void);
+AntonelloApp_Init(void);
 
 #endif
