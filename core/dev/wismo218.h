@@ -46,23 +46,20 @@
 
 #ifndef __WISMO218_H__
 #define __WISMO218_H__
+
+#include "contiki.h"
+
 /*! \union wismo218Cmd
 *  \brief Structure defining a wismo218 command
 *
 * This structure defines the command the application needs to send the wismo218
 *
 */
-#define WISM218_CMD_LEN       6
-#define WISM218_CMD_PAR_LEN   8
-typedef union wismo218Cmd {
-  struct _fieldCmd {
-    char StartTag; /*!< Can be: +, #, * */
-    char Cmd[WISM218_CMD_LEN]; /*!< It is the string of the command */
-    char EndTag; /*!< Can be: =, ? */
-    char OptTag; /*!< Can be: ? if EndTag is ? * */
-    char Params[WISM218_CMD_PAR_LEN]; /*!< Optional parameters */
-  } field;
-  char Command[sizeof(struct _fieldCmd)];
+typedef struct wismo218Cmd {
+  char* Cmd; /*!< It is the null-terminated string of the command */
+  char* Params; /*!< Optional parameters; null terminated string containing ?,= and eventully other data */
+  char* subParams1; /*!< Optional parameters; null terminated string containing data for SMS text  */
+  unsigned char ActivationFlags; /*!< 1: field can be sent; 0: field is skipped. BIT_0:Cmd; BIT_1:Params; BIT_2:ActivationFlags */
 } wismo218Cmd_t;
 
 /*! \union wismo218Ans
@@ -71,17 +68,49 @@ typedef union wismo218Cmd {
 * This structure defines the aswer structure given by wismo218 to a command sent by the application
 *
 */
-#define WISM218_ANS_LEN   32
 typedef union wismo218Ans {
   struct _fieldAns {
     char StartTag; /*!< Can be: +, #, * */
-    char Cmd[WISM218_CMD_LEN]; /*!< It is the string of the command */
-    char Params[WISM218_ANS_LEN]; /*!< Body of the answer */
   } field;
   char Answer[sizeof(struct _fieldAns)];
 } wismo218Ans_t;
 
+
+/**
+ * Event posted when an message is received by wismo128.
+ *
+ * when an answer is send by wismo128 an event is posted.
+ * A pointer to an aswer buffer is sent togheter with the event.
+ */
+extern process_event_t wismo128_event_message;
+extern process_event_t wismo128_gt_message;
+
+/**
+ * Get one byte of input from the serial driver connected to wismo128.
+ *
+ * This function is to be called from the actual RS232 driver to get
+ * one byte of serial data input.
+ *
+ * For systems using low-power CPU modes, the return value of the
+ * function can be used to determine if the CPU should be woken up or
+ * not. If the function returns non-zero, the CPU should be powered
+ * up. If the function returns zero, the CPU can continue to be
+ * powered down.
+ *
+ * \param c The data that is received.
+ *
+ * \return Non-zero if the CPU should be powered up, zero otherwise.
+ */
+
+int wismo128_line_input_byte(unsigned char c);
+
 void wismo218_init(void);
 
-int wismo218_sendCommand(const wismo218Cmd_t* Cmd);
+int wismo218_sendCommand(const char* Cmd);
+
+int wismo218_sendParams(const char* Params);
+
+
+PROCESS_NAME(wismo128_ans_process);
+
 #endif /* __LEDS_H__ */
