@@ -68,11 +68,8 @@ typedef struct wismo218Cmd {
 * This structure defines the aswer structure given by wismo218 to a command sent by the application
 *
 */
-typedef union wismo218Ans {
-  struct _fieldAns {
-    char StartTag; /*!< Can be: +, #, * */
-  } field;
-  char Answer[sizeof(struct _fieldAns)];
+typedef struct wismo218Ans {
+  char *Answer;
 } wismo218Ans_t;
 
 
