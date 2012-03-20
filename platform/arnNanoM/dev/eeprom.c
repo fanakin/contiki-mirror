@@ -42,6 +42,12 @@
 #include "defines-arch.h"
 #include "dev/eeprom.h"
 #include "dev/watchdog.h"
+#include "sys/timer.h"
+#ifdef CONTIKI_TARGET_ARNNANOM
+#include "printf.h" /* For printf() tiny*/
+#else
+#include <stdio.h> /* For printf() */
+#endif
 
 #define MEM_START_ADDRESS	0x00000000
 #define MEM_SIZE		0x00000080
@@ -158,8 +164,16 @@ void eeprom_init(void)
 
 void eeprom_write(eeprom_addr_t addr, unsigned char *buf, int size)
 {
+struct timer tmr;
+timer_set(&tmr,1000); // deve essere almeno 1000 ms
 while (1) {
 	watchdog_periodic();
+	if (timer_expired(&tmr)) {
+		printf("eeprom_read error\r\n");
+		printf("nvm_state_str.nvm_sts:%d\r\n",nvm_state_str.nvm_sts);
+		printf("nvm_state_str.nvm_cmd:%d\r\n",nvm_state_str.nvm_cmd);
+		return;
+		}
 	if (nvm_state_str.nvm_sts == nvms_WRITEDONE) {
 		nvm_state_str.nvm_cmd = nvmc_NONE; 
 		nvm_state_str.nvm_sts = nvms_NONE; 
@@ -197,8 +211,16 @@ while (1) {
 
 void eeprom_read(eeprom_addr_t addr, unsigned char *buf, int size)
 {
+struct timer tmr;
+timer_set(&tmr,1000); // deve essere almeno 1000 ms
 while (1) {
 	watchdog_periodic();
+	if (timer_expired(&tmr)) {
+		printf("eeprom_read error\r\n");
+		printf("nvm_state_str.nvm_sts:%d\r\n",nvm_state_str.nvm_sts);
+		printf("nvm_state_str.nvm_cmd:%d\r\n",nvm_state_str.nvm_cmd);
+		return;
+		}
 	if (nvm_state_str.nvm_sts == nvms_READDONE) {
 		nvm_state_str.nvm_cmd = nvmc_NONE; 
 		nvm_state_str.nvm_sts = nvms_NONE; 

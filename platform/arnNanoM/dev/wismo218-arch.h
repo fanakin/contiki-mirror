@@ -52,4 +52,6 @@ void wismo218_Off(void);
 
 void wismo218_Reset(void);
 
+int is_wismo218_Ready(void);
+
 #endif

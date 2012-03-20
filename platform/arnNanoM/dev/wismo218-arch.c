@@ -43,6 +43,7 @@
 
 #define ON_NOT_OFF	IO.PDR1.BIT.B0
 #define NOT_RESET	IO.PDR1.BIT.B2
+#define READY		IO.PDR1.BIT.B6
 
 void 
 wismo218_Init(void)
@@ -67,9 +68,14 @@ wismo218_Reset(void)
 {
 	struct timer tmr;
 	NOT_RESET = 0;
-	timer_set(&tmr,50); // deve essere almeno 38 ms
+	timer_set(&tmr,100); // deve essere almeno 38 ms
 	while (!timer_expired(&tmr)) ;
 	NOT_RESET = 1;
 
 }
 
+int
+is_wismo218_Ready(void)
+{
+	return READY;
+}
