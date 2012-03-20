@@ -30,7 +30,7 @@ void _ADI_ (void){}
 // void _SCI3_ (void){}
 //void _IIC2_ (void){}
 void _TZ_ITMZ0_ (void){}
-void _TZ_ITMZ1_ (void){}
+//void _TZ_ITMZ1_ (void){}
 //void _TB1_TMIB1_ (void){}
 //void _SCI3_2_ (void){}
 //END interrupt hndl
