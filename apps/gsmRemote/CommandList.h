@@ -53,7 +53,7 @@ typedef struct arnGsmRemoteCommand {
 	arnGsmRemoteCommandGruop_t Gruop;
 	const char *CommandString;
 	const char *HelpString;
-	void* (*handler) (void *);
+	void (*handler) (void *);
 } arnGsmRemoteCommand_t;
 
 #define MAX_CMD_PARAMS_ALLOWED_LEN	128

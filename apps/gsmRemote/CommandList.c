@@ -80,8 +80,11 @@ const arnGsmRemoteCommand_t CommandList[] = {
   {aGRCG_wismo218,"WSMOF","",NULL},
   {aGRCG_wismo218,"WSMON","",NULL},
   {aGRCG_wismo218,"WSMRST","",NULL},
-  {aGRCG_wismo218,"WRITE","",NULL},
-  {aGRCG_wismo218,"READ","",NULL},
+  {aGRCG_wismo218,"EEPRST","",NULL},
+  {aGRCG_wismo218,"ENWM","Abilita sms di benevenuto all'accensione",NULL},
+  {aGRCG_wismo218,"DISWM","Disbilita sms di benevenuto all'accensione",NULL},
+  {aGRCG_wismo218,"SETPHN","Imposta in Eeprom il numero da messaggiare",NULL},
+  {aGRCG_wismo218,"GETPHN","Mostra il numero da messaggiare",NULL},
   {aGRCG_none,NULL,NULL,NULL}
 };
 

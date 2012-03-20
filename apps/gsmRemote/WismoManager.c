@@ -51,11 +51,12 @@
 
 #include "WismoManager.h"
 #include "CommandManager.h"
+#include "eepromLayout.h"
 
 process_event_t wismo218_status_event;
 process_event_t wismo218_data_event;
 static struct etimer timer;
-static wismo218_status_t Status = init_start;
+static wismo218_status_t Status;
 
 static wismo218Ans_t Answer;
 static wismo218Cmd_t* Command;
@@ -73,22 +74,26 @@ PROCESS_THREAD(wismomanager_process, ev, data)
   PROCESS_BEGIN();
 
   printf("WismoManager started.\n\r");
-  etimer_set(&timer, CLOCK_SECOND / 2);
+  etimer_set(&timer, 2 * CLOCK_SECOND);
+  Status = init_start;
   wismo218_status_event = process_alloc_event();
   wismo218_data_event = process_alloc_event();
-  
   while(1) {
     PROCESS_WAIT_EVENT();
     if (ev == PROCESS_EVENT_TIMER) {
       switch (Status) {
-	case init_start: Status = init_w_of; wismo218_Off(); etimer_set(&timer, CLOCK_SECOND / 2); break;
-	case init_w_of: Status = init_w_on; wismo218_On(); etimer_set(&timer, CLOCK_SECOND / 2); break;
-	case init_w_on: Status = init_w_reset; wismo218_Reset(); etimer_set(&timer, CLOCK_SECOND / 2); break;
-	case init_w_reset: Status = init_done; break;
+	case init_start: if (is_wismo218_Ready()) {/*printf("%s:Wismo Ready\r\n",__FUNCTION__);*/ Status = init_w_of; wismo218_Off();} etimer_set(&timer, 2 * CLOCK_SECOND); break;
+	case init_w_of: Status = init_w_on; wismo218_On(); etimer_set(&timer, 2 * CLOCK_SECOND); break;
+	case init_w_on: Status = init_w_reset; wismo218_Reset(); etimer_set(&timer, 2 * CLOCK_SECOND); break;
+	case init_w_reset: Status = init_done; /*printf("%s:Wismo Reset\r\n",__FUNCTION__);*/ break;
 	default: break; 
 	/* Broadcast event */
       }
-    process_post(PROCESS_BROADCAST, wismo218_status_event, &Status); 
+      process_post(PROCESS_BROADCAST, wismo218_status_event, &Status); 
+      /* Wait until all processes have handled the wismo218_status_event event */
+      if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
+	PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
+      }
     }
     else if (ev == wismo218_command_event) {
       if (data != NULL) {
@@ -104,9 +109,15 @@ PROCESS_THREAD(wismomanager_process, ev, data)
       (ev == wismo128_gt_message)
     ) {
       char* Dt = data;
-      // Parse the answer of wismo
-      parserAns(Dt,&Answer);
-      process_post(PROCESS_BROADCAST, wismo218_data_event, &Answer); 
+      if (Dt != NULL)  {
+	// Parse the answer of wismo
+	parserAns(Dt,&Answer);
+	process_post(PROCESS_BROADCAST, wismo218_data_event, &Answer); 
+	/* Wait until all processes have handled the wismo218_data_event line event */
+	if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
+	  PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
+	}
+      }
     }
   }
 
@@ -126,9 +137,13 @@ WismoManager_Init(void)
 void
 parserAns(char* Data, wismo218Ans_t* Ans)
 {
-  printf("%s\r\n",Data);
+  //printf("%s\r\n",Data);
   if (Data[0] == '>') {
+    Ans->Answer = 0;
     if (Command->ActivationFlags & 0x04) {if (Command->subParams1) {if (wismo218_sendParams(Command->subParams1) < 0) printf("%s - %s: error\r\n",Command->Cmd,Command->subParams1);}}
+  }
+  else {
+    Ans->Answer = Data;
   }
   return;
 }
@@ -137,29 +152,60 @@ void
 parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
 {
   if (!strncmp(Cmd->Cmd,"+",1)) {
-    printf("%s\n\r",Cmd->Cmd);
+    //printf("%s\n\r",Cmd->Cmd);
     if (Cmd->ActivationFlags & 0x01) {if (wismo218_sendCommand(Cmd->Cmd) < 0) printf("%s: error\r\n",Cmd->Cmd);}
     if (Cmd->ActivationFlags & 0x02) {if (wismo218_sendParams(Cmd->Params) < 0) printf("%s - %s: error\r\n",Cmd->Cmd,Cmd->Params);}
   }
-  else if (!strcmp(Cmd->Cmd,"WRITE")) {
-    unsigned char bff[16] = {20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36};
-    eeprom_write(0,bff,sizeof(bff));
-    printf("eeprom write done.\r\n");
-  }
-  else if (!strcmp(Cmd->Cmd,"READ")) {
+  else if (!strcmp(Cmd->Cmd,"EEPRST")) {
     int i;
-    unsigned char bff[16];
-    eeprom_read(0,bff,sizeof(bff));
-    for (i = 0; i < 16; i++) printf("%d ",bff[i]);
-    printf("\r\n");
+    unsigned char bff[1] = {255};
+    for (i = 0; i < 128; i++) eeprom_write(i,bff,sizeof(bff));
+    printf("eeprom erasing done.\r\n");
   }
   else if (!strcmp(Cmd->Cmd,"WSMON")) {
     wismo218_On();
+    printf("wismo on.\r\n");
   }
   else if (!strcmp(Cmd->Cmd,"WSMOF")) {
     wismo218_Off();
+    printf("wismo off.\r\n");
   }
   else if (!strcmp(Cmd->Cmd,"WSMRST")) {
     wismo218_Reset();
+    printf("wismo resetted.\r\n");
+  }
+  else if (!strcmp(Cmd->Cmd,"ENWM")) {
+    union {
+      unsigned short us;
+      unsigned char bff[sizeof(unsigned short)];
+    } tmpbff;
+    eeprom_read(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+    tmpbff.us |= (1 << WM_EN_BIT);
+    eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+    printf("Welcome Message Enabled.\r\n");
+  }
+  else if (!strcmp(Cmd->Cmd,"DISWM")) {
+    union {
+      unsigned short us;
+      unsigned char bff[sizeof(unsigned short)];
+    } tmpbff;
+    eeprom_read(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+    tmpbff.us &= ~(1 << WM_EN_BIT);
+    eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+    printf("Welcome Message Disabled.\r\n");
+  }
+  else if (!strcmp(Cmd->Cmd,"SETPHN")) {
+    unsigned char bff[PHONENUMBER_SIZE + 1];
+    memset(bff,0,sizeof(bff));
+    memcpy(bff,Cmd->Params,sizeof(bff));
+    printf("Phone Number:%s...\r\n",(char*)bff);
+    eeprom_write(PHONENUMBER_OFFSET,bff,PHONENUMBER_SIZE);
+    printf("Fatto.\r\n");
+  }
+  else if (!strcmp(Cmd->Cmd,"GETPHN")) {
+    unsigned char bff[PHONENUMBER_SIZE + 1];
+    memset(bff,0,sizeof(bff));
+    eeprom_read(PHONENUMBER_OFFSET,bff,PHONENUMBER_SIZE);
+    printf("Phone Number:%s.\r\n",(char*)(bff));
   }
 }

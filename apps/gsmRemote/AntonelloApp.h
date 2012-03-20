@@ -46,8 +46,16 @@
 typedef enum AntonelloAppStatus {
   antApp_Init = 0,
   antApp_Initdone,
+  antApp_CheckEepromInit,
+  antApp_EepromInit,
+  antApp_PowerOn,
+  antApp_PostCommad,
+  antApp_WaitAnswer,
+  antApp_SendInitWM,
+  antApp_Getdatatime,
   antApp_Datagot,
-  antApp_Idle
+  antApp_Idle,
+  antApp_Error
 }
 AntonelloAppStatus_t;
 

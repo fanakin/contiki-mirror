@@ -40,6 +40,7 @@
 #include <string.h>
 #include "contiki.h"
 #include "dev/halleffect-sensor.h"
+#include "dev/eeprom.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
 #include "printf.h" /* For printf() tiny*/
@@ -47,13 +48,31 @@
 #include <stdio.h> /* For printf() */
 #endif
 
+#include "CommandList.h"
 #include "WismoManager.h"
+#include "CommandManager.h"
+#include "eepromLayout.h"
 #include "AntonelloApp.h"
 
 static AntonelloAppStatus_t Status;
 static struct etimer timer;
-#define CHECKING_TIME	5 * CLOCK_SECOND
+#define CHECKING_TIME	1 * CLOCK_SECOND
+static wismo218Cmd_t Wismo218Command = {"","","",0x03};
 
+const char QUESTION_MARK[] = {0x3f,0x0d,0x00};
+const char EQUAL_QUESTION_MARK[] =  {0x3d,0x3f,0x0d,0x00};
+extern const char CTRL_Z[];
+
+static int parseWismo218Answer(wismo218Ans_t* Ans);
+#define ANS_OK			0
+#define ANS_NOT			-1
+#define ANS_INVALID		-2
+
+static char ParamBuffer[20];
+static char subParam1Buffer[32];
+
+static getDataTime(
+RTC
 PROCESS(antonello_process, "AntonelloApp");
 //AUTOSTART_PROCESSES(&antonello_process);
 
@@ -73,9 +92,76 @@ PROCESS_THREAD(antonello_process, ev, data)
       etimer_set(&timer, CHECKING_TIME);
       switch (Status) {
 	case antApp_Initdone:
-	  Status = antApp_Idle;
+	  Status = antApp_CheckEepromInit;
 	  break;
+	case antApp_CheckEepromInit: {
+	  unsigned char bff[INITKEY_SIZE];
+	  eeprom_read(INITKEY_OFFSET,bff,sizeof(bff));
+	  if (strncmp((const char*)bff,"BABE",sizeof(bff))) Status = antApp_EepromInit;
+	  else Status = antApp_PowerOn;
+	  }
+	  break;
+	case antApp_EepromInit: {
+	  unsigned char bff[INITKEY_SIZE] = {'B','A','B','E'};
+	  eeprom_write(INITKEY_OFFSET,bff,sizeof(bff));
+	  printf("Initialization Tag written.\n\r");
+	  Status = antApp_CheckEepromInit;
+	  }
+	  break;
+	case antApp_PowerOn: {
+	  Wismo218Command.Cmd = (char*)(CommandList[3].CommandString); //+CPIN
+	  Wismo218Command.Params = (char*)QUESTION_MARK; //"?"
+	  Wismo218Command.subParams1 = 0;
+	  Wismo218Command.ActivationFlags |= 0x03;
+	  Status = antApp_PostCommad;
+	  }
+	  break;
+	case antApp_PostCommad: {
+	  /* Broadcast event */
+	  process_post(PROCESS_BROADCAST, wismo218_command_event, &Wismo218Command);
+	  Status = antApp_WaitAnswer;
+	  }
+	  break;
+	case antApp_WaitAnswer: break;
 	case antApp_Idle:
+	  //printf("Idle\r\n");
+	  break;
+	case antApp_SendInitWM: {
+	  printf("Send WM\r\n");
+	  memset(ParamBuffer,0,sizeof(ParamBuffer));
+	  memset(subParam1Buffer,0,sizeof(subParam1Buffer));
+	  ParamBuffer[0] = '=';ParamBuffer[1] = '"';
+	  eeprom_read(PHONENUMBER_OFFSET,((unsigned char*)ParamBuffer) + 2 ,PHONENUMBER_SIZE);
+	  ParamBuffer[2 + PHONENUMBER_SIZE] = '"';
+	  ParamBuffer[3 + PHONENUMBER_SIZE] = 13;
+	  strcpy(subParam1Buffer,"W218 Powered on.");
+	  Wismo218Command.Cmd = (char*)(CommandList[19].CommandString); //+CMGS
+	  Wismo218Command.Params =ParamBuffer;
+	  Wismo218Command.subParams1 = subParam1Buffer;
+	  strcat(Wismo218Command.subParams1,CTRL_Z);
+	  Wismo218Command.ActivationFlags |= 0x07;
+	  //printf("%s\r\n",Wismo218Command.Params);
+	  //printf("%s\r\n",Wismo218Command.subParams1);
+	  Status = antApp_PostCommad;
+	  }
+	  break;
+	case antApp_Getdatatime: {
+	  printf("Get datatime\r\n");
+	  memset(ParamBuffer,0,sizeof(ParamBuffer));
+	  memset(subParam1Buffer,0,sizeof(subParam1Buffer));
+	  ParamBuffer[0] = '?';
+	  ParamBuffer[1] = 13;
+	  Wismo218Command.Cmd = (char*)(CommandList[25].CommandString); //+CCLK
+	  Wismo218Command.Params = ParamBuffer;
+	  Wismo218Command.subParams1 = 0;
+	  Wismo218Command.ActivationFlags |= 0x03;
+	  //printf("%s\r\n",Wismo218Command.Params);
+	  //printf("%s\r\n",Wismo218Command.subParams1);
+	  Status = antApp_PostCommad;
+	  }
+	  break;
+	case antApp_Error:
+	  printf("Error\r\n");
 	  break;
 	default: break;
       }
@@ -87,26 +173,19 @@ PROCESS_THREAD(antonello_process, ev, data)
 	  printf("Counter:%d\r\n",sensor->value(0));
 	}
       }
-      /* Wait until all processes have handled the sensor_event line event */
-      if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
-	PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
-      }
     }
     else if (ev == wismo218_status_event) {
       if (data != NULL) {
 	 wismo218_status_t status = (*((wismo218_status_t*)data));
 	 if (status == init_done) {Status = antApp_Initdone;printf("wismo reset done.\n\r");}
       }
-      /* Wait until all processes have handled the sensor_event line event */
-      if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
-	PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
-      }
     }
     else if (ev == wismo218_data_event) {
       if (data != NULL) {
-	printf("New data from wismo are available\r\n");
+	wismo218Ans_t *Ans = (wismo218Ans_t*)data;
+	if (ANS_OK == parseWismo218Answer(Ans)) {printf("ANS OK\r\n");}
       }
-      /* Wait until all processes have handled the sensor_event line event */
+      /* Wait until all processes have handled the wismo218_data_event line event */
       if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {
 	PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_CONTINUE);
       }
@@ -126,3 +205,46 @@ AntonelloApp_Init(void)
   process_start(&antonello_process, NULL);  
 }
 
+
+int
+parseWismo218Answer(wismo218Ans_t* Ans)
+{
+  //printf("%s:%s |||| %s\r\n",__FUNCTION__,Ans->Answer,Wismo218Command.Cmd);
+  if (strncmp((const char*)Ans->Answer,Wismo218Command.Cmd,strlen(Wismo218Command.Cmd))) return ANS_INVALID;
+  else {
+    if (!strncmp((const char*)Wismo218Command.Cmd,"+CPIN",5)) {
+      if (Ans->Answer) {
+	Ans->Answer += strlen(Wismo218Command.Cmd);
+	Ans->Answer += 2;
+	printf("%s\r\n",Ans->Answer);
+      }
+      Status = antApp_Getdatatime;
+      if (!strncmp((const char*)Ans->Answer,"READY",5)) return ANS_OK;
+      Status = antApp_Error;
+    }
+    else if (!strncmp((const char*)Wismo218Command.Cmd,"+CCLK",5)) {
+      //union {
+	//unsigned short us;
+	//unsigned char bff[sizeof(unsigned short)];
+      //} tmpbff;
+      if (Ans->Answer) {
+	Ans->Answer += strlen(Wismo218Command.Cmd);
+	Ans->Answer += 2;
+	printf("%s\r\n",Ans->Answer);
+      }
+      //eeprom_read(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+      //if (tmpbff.us & (1 << WM_EN_BIT)) {etimer_set(&timer, 2 * CHECKING_TIME);  Status = antApp_SendInitWM;}
+      //else Status = antApp_Idle;
+      //if (!strncmp((const char*)Ans->Answer,"READY",5)) return ANS_OK;
+      Status = antApp_Error;
+    }
+    else if (!strncmp((const char*)Wismo218Command.Cmd,"+CMGS",5)) {
+      Status = antApp_Idle;
+      if (Ans->Answer) printf("%s\r\n",Ans->Answer);
+      if (!strncmp((const char*)(Ans->Answer),"+CMGS",5)) {return ANS_OK;}
+      //Status = antApp_Error;
+    }
+  }
+
+  return ANS_NOT;
+}
