@@ -14,6 +14,9 @@ extern "C" {
 
 extern void _SCI3_ (void);
 extern void _SCI3_2_ (void);
+extern void _IIC2_ (void);
+extern void _TZ_ITMZ1_ (void);
+extern void _TB1_TMIB1_ (void);
 
 #ifdef __cplusplus
 };
