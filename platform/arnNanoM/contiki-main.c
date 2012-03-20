@@ -47,6 +47,7 @@
 #include "dev/leds.h"
 #include "dev/pir-sensor.h"
 #include "dev/vib-sensor.h"
+#include "dev/halleffect-sensor.h"
 #include "dev/button-sensor.h"
 #include "dev/wismo218.h"
 #include "dev/sci3-putchar.h"
@@ -73,8 +74,8 @@ print_processes(struct process * const processes[])
 
 PROCINIT(&etimer_process);
 
-//SENSORS(&pir_sensor, &vib_sensor, &button_sensor);
-
+//SENSORS(&halleffect_sensor, &vib_sensor, &button_sensor);
+SENSORS(&halleffect_sensor);
 /*---------------------------------------------------------------------------*/
 int
 os_main(void)
@@ -109,7 +110,8 @@ os_main(void)
   print_processes(autostart_processes);
   autostart_start(autostart_processes);
   watchdog_periodic();
-  
+  process_start(&sensors_process, NULL);
+
   
   while(1) {
     /*int n;*/
