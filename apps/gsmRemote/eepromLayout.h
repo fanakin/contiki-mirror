@@ -49,7 +49,7 @@
 #define INITFLAG_OFFSET		(INITKEY_OFFSET + INITKEY_SIZE)
 #define INITFLAG_SIZE		2
 	#define WM_EN_BIT		0
-	#define UNDEF_1_BIT		1
+	#define ANTAPP_IDEL_EN_BIT	1
 	#define UNDEF_2_BIT		2
 	#define UNDEF_3_BIT		3
 	#define UNDEF_4_BIT		4

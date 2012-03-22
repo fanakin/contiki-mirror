@@ -6,3 +6,6 @@ WismoManager.h~
 .hide
 CommandList.h~
 CommandList.c~
+AntonelloApp.c~
+AntonelloApp.h~
+eepromLayout.h~

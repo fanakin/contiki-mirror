@@ -194,6 +194,26 @@ parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
     eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
     printf("Welcome Message Disabled.\r\n");
   }
+  else if (!strcmp(Cmd->Cmd,"ENIDLE")) {
+    union {
+      unsigned short us;
+      unsigned char bff[sizeof(unsigned short)];
+    } tmpbff;
+    eeprom_read(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+    tmpbff.us |= (1 << ANTAPP_IDEL_EN_BIT);
+    eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+    printf("IDLE Enabled.\r\n");
+  }
+  else if (!strcmp(Cmd->Cmd,"DISIDLE")) {
+    union {
+      unsigned short us;
+      unsigned char bff[sizeof(unsigned short)];
+    } tmpbff;
+    eeprom_read(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+    tmpbff.us &= ~(1 << ANTAPP_IDEL_EN_BIT);
+    eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+    printf("IDLE Disabled.\r\n");
+  }
   else if (!strcmp(Cmd->Cmd,"SETPHN")) {
     unsigned char bff[PHONENUMBER_SIZE + 1];
     memset(bff,0,sizeof(bff));

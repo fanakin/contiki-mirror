@@ -85,6 +85,8 @@ const arnGsmRemoteCommand_t CommandList[] = {
   {aGRCG_wismo218,"DISWM","Disbilita sms di benevenuto all'accensione",NULL},
   {aGRCG_wismo218,"SETPHN","Imposta in Eeprom il numero da messaggiare",NULL},
   {aGRCG_wismo218,"GETPHN","Mostra il numero da messaggiare",NULL},
+  {aGRCG_wismo218,"ENIDLE","Abilita IDLE",NULL},
+  {aGRCG_wismo218,"DISIDLE","Disbilita IDLE",NULL},
   {aGRCG_none,NULL,NULL,NULL}
 };
 

@@ -69,10 +69,28 @@ static int parseWismo218Answer(wismo218Ans_t* Ans);
 #define ANS_INVALID		-2
 
 static char ParamBuffer[20];
-static char subParam1Buffer[32];
+static char subParam1Buffer[48];
+static antAppRTC_t DataTime;
+static int getDataTime(const char* str,antAppRTC_t* Data);
 
-static getDataTime(
-RTC
+struct antIdleActivite {
+  unsigned long SchedTimerForData;
+  unsigned int counter;
+  struct {
+    unsigned short : 13;
+    unsigned short EnIdle: 1;
+    unsigned short SendMsg: 1;
+    unsigned short WelMsgSent: 1;
+  } FLAG;
+} antIdleStructure;
+
+#define ONE_MINUTE			60 // seconds
+#define ONE_HOUR			(60 * ONE_MINUTE)
+#define HALF_A_DAY			(12 * ONE_HOUR)
+#define A_DAY				(24 * ONE_HOUR)
+
+#define TIME_FOR_DATA_SCHEDULE		(4 * ONE_HOUR)
+
 PROCESS(antonello_process, "AntonelloApp");
 //AUTOSTART_PROCESSES(&antonello_process);
 
@@ -83,6 +101,7 @@ PROCESS_THREAD(antonello_process, ev, data)
   PROCESS_BEGIN();
   Status = antApp_Init;
   etimer_set(&timer, CHECKING_TIME);
+  memset (&antIdleStructure,0,sizeof(antIdleStructure));
   
   printf("AntonelloApp started.\n\r");
   while(1) {
@@ -125,16 +144,22 @@ PROCESS_THREAD(antonello_process, ev, data)
 	case antApp_WaitAnswer: break;
 	case antApp_Idle:
 	  //printf("Idle\r\n");
+	  if (!antIdleStructure.FLAG.EnIdle) break;
+	  if (antIdleStructure.SchedTimerForData++ == TIME_FOR_DATA_SCHEDULE) {
+	    antIdleStructure.SchedTimerForData = 0;
+	    antIdleStructure.FLAG.SendMsg = 1;
+	    Status = antApp_Getdatatime;
+	  }
 	  break;
 	case antApp_SendInitWM: {
 	  printf("Send WM\r\n");
 	  memset(ParamBuffer,0,sizeof(ParamBuffer));
-	  memset(subParam1Buffer,0,sizeof(subParam1Buffer));
+	  //memset(subParam1Buffer,0,sizeof(subParam1Buffer)); see +CCLK command
 	  ParamBuffer[0] = '=';ParamBuffer[1] = '"';
 	  eeprom_read(PHONENUMBER_OFFSET,((unsigned char*)ParamBuffer) + 2 ,PHONENUMBER_SIZE);
 	  ParamBuffer[2 + PHONENUMBER_SIZE] = '"';
 	  ParamBuffer[3 + PHONENUMBER_SIZE] = 13;
-	  strcpy(subParam1Buffer,"W218 Powered on.");
+	  strcat(subParam1Buffer," W218 Powered on.");
 	  Wismo218Command.Cmd = (char*)(CommandList[19].CommandString); //+CMGS
 	  Wismo218Command.Params =ParamBuffer;
 	  Wismo218Command.subParams1 = subParam1Buffer;
@@ -145,10 +170,30 @@ PROCESS_THREAD(antonello_process, ev, data)
 	  Status = antApp_PostCommad;
 	  }
 	  break;
+	case antApp_SendMsg: {
+	  printf("Send Msg\r\n");
+	  memset(ParamBuffer,0,sizeof(ParamBuffer));
+	  //memset(subParam1Buffer,0,sizeof(subParam1Buffer)); see +CCLK command
+	  ParamBuffer[0] = '=';ParamBuffer[1] = '"';
+	  eeprom_read(PHONENUMBER_OFFSET,((unsigned char*)ParamBuffer) + 2 ,PHONENUMBER_SIZE);
+	  ParamBuffer[2 + PHONENUMBER_SIZE] = '"';
+	  ParamBuffer[3 + PHONENUMBER_SIZE] = 13;
+	  strcat(subParam1Buffer," Cnt:");
+	  sprintf(subParam1Buffer + strlen(subParam1Buffer),"%d",antIdleStructure.counter);
+	  Wismo218Command.Cmd = (char*)(CommandList[19].CommandString); //+CMGS
+	  Wismo218Command.Params =ParamBuffer;
+	  Wismo218Command.subParams1 = subParam1Buffer;
+	  strcat(Wismo218Command.subParams1,CTRL_Z);
+	  Wismo218Command.ActivationFlags |= 0x07;
+	  antIdleStructure.FLAG.SendMsg = 0;
+	  //printf("%s\r\n",Wismo218Command.Params);
+	  //printf("%s\r\n",Wismo218Command.subParams1);
+	  Status = antApp_PostCommad;
+	  }
+	  break;
 	case antApp_Getdatatime: {
 	  printf("Get datatime\r\n");
 	  memset(ParamBuffer,0,sizeof(ParamBuffer));
-	  memset(subParam1Buffer,0,sizeof(subParam1Buffer));
 	  ParamBuffer[0] = '?';
 	  ParamBuffer[1] = 13;
 	  Wismo218Command.Cmd = (char*)(CommandList[25].CommandString); //+CCLK
@@ -170,6 +215,7 @@ PROCESS_THREAD(antonello_process, ev, data)
       if (data != NULL) {
 	struct sensors_sensor* sensor = (struct sensors_sensor*)data;
 	if (!strcmp(sensor->type,HALLEFFECT_SENSOR)) {
+	  antIdleStructure.counter = sensor->value(0);
 	  printf("Counter:%d\r\n",sensor->value(0));
 	}
       }
@@ -209,7 +255,7 @@ AntonelloApp_Init(void)
 int
 parseWismo218Answer(wismo218Ans_t* Ans)
 {
-  //printf("%s:%s |||| %s\r\n",__FUNCTION__,Ans->Answer,Wismo218Command.Cmd);
+  //printf("\r\n%s:%s\r\n",__FUNCTION__,Ans->Answer);
   if (strncmp((const char*)Ans->Answer,Wismo218Command.Cmd,strlen(Wismo218Command.Cmd))) return ANS_INVALID;
   else {
     if (!strncmp((const char*)Wismo218Command.Cmd,"+CPIN",5)) {
@@ -223,28 +269,55 @@ parseWismo218Answer(wismo218Ans_t* Ans)
       Status = antApp_Error;
     }
     else if (!strncmp((const char*)Wismo218Command.Cmd,"+CCLK",5)) {
-      //union {
-	//unsigned short us;
-	//unsigned char bff[sizeof(unsigned short)];
-      //} tmpbff;
+      union {
+	unsigned short us;
+	unsigned char bff[sizeof(unsigned short)];
+      } tmpbff;
       if (Ans->Answer) {
 	Ans->Answer += strlen(Wismo218Command.Cmd);
 	Ans->Answer += 2;
-	printf("%s\r\n",Ans->Answer);
+	//printf("%s\r\n",Ans->Answer);
+	memset(subParam1Buffer,0,sizeof(subParam1Buffer));
+	strncpy(subParam1Buffer,Ans->Answer + 1,17);
+	if (getDataTime(Ans->Answer,&DataTime)) {
+	  printf("%d/%d/%d-%d:%d:%d\r\n",DataTime.Year,DataTime.Month,DataTime.Day,DataTime.Hour,DataTime.Min,DataTime.Sec);
+	}
       }
-      //eeprom_read(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
-      //if (tmpbff.us & (1 << WM_EN_BIT)) {etimer_set(&timer, 2 * CHECKING_TIME);  Status = antApp_SendInitWM;}
-      //else Status = antApp_Idle;
-      //if (!strncmp((const char*)Ans->Answer,"READY",5)) return ANS_OK;
-      Status = antApp_Error;
+      if (antIdleStructure.FLAG.WelMsgSent == 0) {
+	eeprom_read(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
+	if (tmpbff.us & (1 << ANTAPP_IDEL_EN_BIT)) {antIdleStructure.FLAG.EnIdle = 1;}
+	else  {antIdleStructure.FLAG.EnIdle = 0;}
+	if (tmpbff.us & (1 << WM_EN_BIT)) {etimer_set(&timer, 2 * CHECKING_TIME);  Status = antApp_SendInitWM;}
+	else {antIdleStructure.FLAG.WelMsgSent = 1; Status = antApp_Idle;}
+      }
+      else if (antIdleStructure.FLAG.SendMsg == 1) {
+	Status = antApp_SendMsg;
+      }
+      else Status = antApp_Idle;
     }
     else if (!strncmp((const char*)Wismo218Command.Cmd,"+CMGS",5)) {
       Status = antApp_Idle;
       if (Ans->Answer) printf("%s\r\n",Ans->Answer);
-      if (!strncmp((const char*)(Ans->Answer),"+CMGS",5)) {return ANS_OK;}
+      if (!strncmp((const char*)(Ans->Answer),"+CMGS",5)) {antIdleStructure.FLAG.WelMsgSent = 1; return ANS_OK;}
       //Status = antApp_Error;
     }
   }
 
   return ANS_NOT;
+}
+
+
+int getDataTime(const char* str,antAppRTC_t* Data)
+{
+  // str is: "yy/mm/dd,hh:mm:ss+GMT GMT in quarter of hour
+  if (!str || !Data) return 0;
+  str++;
+  Data->Year = ((10 * (*str - 48)) + ((*(str + 1) - 48))); str += 3;
+  Data->Month = ((10 * (*str - 48)) + ((*(str + 1) - 48))); str += 3;
+  Data->Day = ((10 * (*str - 48)) + ((*(str + 1) - 48))); str += 3;
+  Data->Hour = ((10 * (*str - 48)) + ((*(str + 1) - 48))); str += 3;
+  Data->Min = ((10 * (*str - 48)) + ((*(str + 1) - 48))); str += 3;
+  Data->Sec = ((10 * (*str - 48)) + ((*(str + 1) - 48))); str += 3;
+  Data->GMT = ((10 * (*str - 48)) + ((*(str + 1) - 48))); str += 3;
+  return 1;
 }

@@ -53,12 +53,21 @@ typedef enum AntonelloAppStatus {
   antApp_WaitAnswer,
   antApp_SendInitWM,
   antApp_Getdatatime,
-  antApp_Datagot,
+  antApp_SendMsg,
   antApp_Idle,
   antApp_Error
 }
 AntonelloAppStatus_t;
 
+typedef struct antAppRTC {
+  unsigned char Year;
+  unsigned char Month;
+  unsigned char Day;
+  unsigned char Hour;
+  unsigned char Min;
+  unsigned char Sec;
+  signed char GMT;
+} antAppRTC_t;
 /**
  * It starts the process of command manager
  *
