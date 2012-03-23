@@ -162,6 +162,130 @@ void eeprom_init(void)
 	nvm_state_str.iicStatus = iics_IDLE;
 }
 
+
+static unsigned char readByte(unsigned char* dest, unsigned long address)
+{
+struct timer tmr;
+timer_set(&tmr,1000); // deve essere almeno 1000 ms
+while (1) {
+	watchdog_periodic();
+	if (timer_expired(&tmr)) {
+		printf("eeprom_read error\r\n");
+		printf("nvm_state_str.nvm_sts:%d\r\n",nvm_state_str.nvm_sts);
+		printf("nvm_state_str.nvm_cmd:%d\r\n",nvm_state_str.nvm_cmd);
+		return 0;
+		}
+	if (nvm_state_str.nvm_sts == nvms_READDONE) {
+		nvm_state_str.nvm_cmd = nvmc_NONE; 
+		nvm_state_str.nvm_sts = nvms_NONE; 
+		return 1;
+		}
+	if (IS_BUSY || (nvm_state_str.nvm_sts != nvms_NONE)) continue;
+	nvm_state_str.pAddress = dest;
+	nvm_state_str.count = 1;
+	nvm_state_str.Address.us = (unsigned short)address;
+	switch(nvm_state_str.Address.uc[0]) {
+		case 0: nvm_state_str.DevSel_W = WRITE_PAGE_0; nvm_state_str.DevSel_R = READ_PAGE_0; break;
+		case 1: nvm_state_str.DevSel_W = WRITE_PAGE_1; nvm_state_str.DevSel_R = READ_PAGE_1; break;
+		case 2: nvm_state_str.DevSel_W = WRITE_PAGE_2; nvm_state_str.DevSel_R = READ_PAGE_2; break;
+		case 3: nvm_state_str.DevSel_W = WRITE_PAGE_3; nvm_state_str.DevSel_R = READ_PAGE_3; break;
+		case 4: nvm_state_str.DevSel_W = WRITE_PAGE_4; nvm_state_str.DevSel_R = READ_PAGE_4; break;
+		case 5: nvm_state_str.DevSel_W = WRITE_PAGE_5; nvm_state_str.DevSel_R = READ_PAGE_5; break;
+		case 6: nvm_state_str.DevSel_W = WRITE_PAGE_6; nvm_state_str.DevSel_R = READ_PAGE_6; break;
+		case 7: nvm_state_str.DevSel_W = WRITE_PAGE_7; nvm_state_str.DevSel_R = READ_PAGE_7; break;
+		default: nvm_state_str.DevSel_W = WRITE_PAGE_0; nvm_state_str.DevSel_R = READ_PAGE_0; break;
+		}
+	// set Master transfer mode
+	IIC2.ICCR1.BIT.MST = 1;
+	IIC2.ICCR1.BIT.TRS = 1;
+	//
+	_START_();
+	//
+	IIC2.ICSR.BIT.TEND = 0;
+	IIC2.ICIER.BIT.TEIE = 1;
+	nvm_state_str.iicStatus = iics_DEVSEL_W;
+	nvm_state_str.nvm_cmd = nvmc_READ_BYTE;
+	nvm_state_str.nvm_sts = nvms_READINPROGRESS;
+	IIC2.ICDRT = nvm_state_str.DevSel_W;
+	}
+}
+
+static unsigned char writeByte(unsigned long address, unsigned char val)
+{
+struct timer tmr;
+timer_set(&tmr,1000); // deve essere almeno 1000 ms
+while (1) {
+	watchdog_periodic();
+	if (timer_expired(&tmr)) {
+		printf("eeprom_read error\r\n");
+		printf("nvm_state_str.nvm_sts:%d\r\n",nvm_state_str.nvm_sts);
+		printf("nvm_state_str.nvm_cmd:%d\r\n",nvm_state_str.nvm_cmd);
+		return 0;
+		}
+	if (nvm_state_str.nvm_sts == nvms_WRITEDONE) {
+		nvm_state_str.nvm_cmd = nvmc_NONE; 
+		nvm_state_str.nvm_sts = nvms_NONE; 
+		return 1;
+		}
+	if (IS_BUSY || (nvm_state_str.nvm_sts != nvms_NONE)) continue;
+	nvm_state_str.data = val;
+	nvm_state_str.count = 1;
+	nvm_state_str.Address.us = (unsigned short)address;
+	switch(nvm_state_str.Address.uc[0]) {
+		case 0: nvm_state_str.DevSel_W = WRITE_PAGE_0; break;
+		case 1: nvm_state_str.DevSel_W = WRITE_PAGE_1; break;
+		case 2: nvm_state_str.DevSel_W = WRITE_PAGE_2; break;
+		case 3: nvm_state_str.DevSel_W = WRITE_PAGE_3; break;
+		case 4: nvm_state_str.DevSel_W = WRITE_PAGE_4; break;
+		case 5: nvm_state_str.DevSel_W = WRITE_PAGE_5; break;
+		case 6: nvm_state_str.DevSel_W = WRITE_PAGE_6; break;
+		case 7: nvm_state_str.DevSel_W = WRITE_PAGE_7; break;
+		default: nvm_state_str.DevSel_W = WRITE_PAGE_0; break;
+		}
+	// set Master transfer mode
+	IIC2.ICCR1.BIT.MST = 1;
+	IIC2.ICCR1.BIT.TRS = 1;
+	//
+	_START_();
+	//
+	IIC2.ICSR.BIT.TEND = 0;
+	IIC2.ICIER.BIT.TEIE = 1;
+	nvm_state_str.iicStatus = iics_DEVSEL_W;
+	nvm_state_str.nvm_cmd = nvmc_WRITE_BYTE;
+	nvm_state_str.nvm_sts = nvms_WRITEINPROGRESS;
+	IIC2.ICDRT = nvm_state_str.DevSel_W;
+	}
+}
+
+void eeprom_read(eeprom_addr_t addr, unsigned char *buf, int size)
+{
+int i;
+for (i = 0; i< size; i++) {
+	if (!readByte(buf + i,addr + i)) {
+		printf("error reading address:%d\r\n",addr + i);
+		break;
+		}
+	}
+}
+
+void eeprom_write(eeprom_addr_t addr, unsigned char *buf, int size)
+{
+int i;
+for (i = 0; i< size; i++) {
+	if (!writeByte(addr + i,*(buf + i))) {
+		printf("error writing address:%d\r\n",addr + i);
+		break;
+		}
+	}
+}
+
+#if 0
+///TODO
+Error when your array is across two differnt pages
+Needed the modification of the IRQ handler in order to
+update properly IIC2.ICDRT = nvm_state_str.DevSel_W;
+also into the IRQ
+///
 void eeprom_write(eeprom_addr_t addr, unsigned char *buf, int size)
 {
 struct timer tmr;
@@ -255,6 +379,7 @@ while (1) {
 	IIC2.ICDRT = nvm_state_str.DevSel_W;
 	}
 }
+#endif
 
 void _IIC2_(unsigned long par)
 {
