@@ -205,6 +205,19 @@ PROCESS_THREAD(antonello_process, ev, data)
 	  Status = antApp_PostCommad;
 	  }
 	  break;
+	case antApp_Getsignallevel : {
+	  printf("Get signal quality\r\n");
+	  memset(ParamBuffer,0,sizeof(ParamBuffer));
+	  ParamBuffer[0] = 13;
+	  Wismo218Command.Cmd = (char*)(CommandList[4].CommandString); //+CSQ
+	  Wismo218Command.Params = ParamBuffer;
+	  Wismo218Command.subParams1 = 0;
+	  Wismo218Command.ActivationFlags |= 0x03;
+	  //printf("%s\r\n",Wismo218Command.Params);
+	  //printf("%s\r\n",Wismo218Command.subParams1);
+	  Status = antApp_PostCommad;
+	  }
+	  break;
 	case antApp_Error:
 	  printf("Error\r\n");
 	  break;
@@ -255,20 +268,38 @@ AntonelloApp_Init(void)
 int
 parseWismo218Answer(wismo218Ans_t* Ans)
 {
+  //BEGIN DEBUG
   //printf("\r\n%s:%s\r\n",__FUNCTION__,Ans->Answer);
-  if (strncmp((const char*)Ans->Answer,Wismo218Command.Cmd,strlen(Wismo218Command.Cmd))) return ANS_INVALID;
+  //END DEBUG
+  if (strncmp((const char*)Ans->Answer,Wismo218Command.Cmd,strlen(Wismo218Command.Cmd))) {
+    //if (Ans->Answer) printf("%s\r\n",Ans->Answer);
+    return ANS_INVALID;
+  }
   else {
-    if (!strncmp((const char*)Wismo218Command.Cmd,"+CPIN",5)) {
+    if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[3].CommandString),5)) { //+CPIN
+      if (Ans->Answer) {
+	Ans->Answer += strlen(Wismo218Command.Cmd);
+	Ans->Answer += 2;
+	printf("%s\r\n",Ans->Answer);
+      }
+      Status = antApp_Getsignallevel;
+      if (!strncmp((const char*)Ans->Answer,"READY",5)) return ANS_OK;
+      Status = antApp_Error;
+    }
+    else if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[4].CommandString),5)) { //+CSQ
       if (Ans->Answer) {
 	Ans->Answer += strlen(Wismo218Command.Cmd);
 	Ans->Answer += 2;
 	printf("%s\r\n",Ans->Answer);
       }
       Status = antApp_Getdatatime;
-      if (!strncmp((const char*)Ans->Answer,"READY",5)) return ANS_OK;
-      Status = antApp_Error;
+      return ANS_OK;
+      ///TODO
+      // If teh signal less than a threshold maybe can be usefull to freeze the applicazion
+      //if (!strncmp((const char*)Ans->Answer,"READY",5)) return ANS_OK;
+      //Status = antApp_Error;
     }
-    else if (!strncmp((const char*)Wismo218Command.Cmd,"+CCLK",5)) {
+    else if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[25].CommandString),5)) { // +CCLK
       union {
 	unsigned short us;
 	unsigned char bff[sizeof(unsigned short)];
@@ -295,12 +326,13 @@ parseWismo218Answer(wismo218Ans_t* Ans)
       }
       else Status = antApp_Idle;
     }
-    else if (!strncmp((const char*)Wismo218Command.Cmd,"+CMGS",5)) {
+    else if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[19].CommandString),5)) { //+CMGS
       Status = antApp_Idle;
       if (Ans->Answer) printf("%s\r\n",Ans->Answer);
-      if (!strncmp((const char*)(Ans->Answer),"+CMGS",5)) {antIdleStructure.FLAG.WelMsgSent = 1; return ANS_OK;}
+      if (!strncmp((const char*)(Ans->Answer),(char*)(CommandList[19].CommandString),5)) {antIdleStructure.FLAG.WelMsgSent = 1; return ANS_OK;}
       //Status = antApp_Error;
     }
+    else {if (Ans->Answer) printf("%s\r\n",Ans->Answer);}
   }
 
   return ANS_NOT;

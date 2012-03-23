@@ -53,6 +53,7 @@ typedef enum AntonelloAppStatus {
   antApp_WaitAnswer,
   antApp_SendInitWM,
   antApp_Getdatatime,
+  antApp_Getsignallevel,
   antApp_SendMsg,
   antApp_Idle,
   antApp_Error

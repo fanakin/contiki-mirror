@@ -217,7 +217,8 @@ parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
   else if (!strcmp(Cmd->Cmd,"SETPHN")) {
     unsigned char bff[PHONENUMBER_SIZE + 1];
     memset(bff,0,sizeof(bff));
-    memcpy(bff,Cmd->Params,sizeof(bff));
+    memcpy(bff,Cmd->Params,PHONENUMBER_SIZE);
+    printf("%s\r\n",(char*)bff);
     printf("Phone Number:%s...\r\n",(char*)bff);
     eeprom_write(PHONENUMBER_OFFSET,bff,PHONENUMBER_SIZE);
     printf("Fatto.\r\n");
