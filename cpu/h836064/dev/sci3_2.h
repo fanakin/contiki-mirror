@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, Swedish Institute of Computer Science
+ * Copyright (c) 2012, Aurion s.r.l. (Bologna - Italy)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,24 +28,24 @@
  *
  * This file is part of the Contiki operating system.
  *
- * @(#)$Id: msp430.c,v 1.15 2011/01/05 13:36:38 joxe Exp $
+ * $Id: sci3.h,v 1.4 2012/02/03 12:46:57 fabiogiovagnini Exp $
  */
+
+/**
+ * \file
+ *         A brief description of what this file is.
+ * \author
+ *         Fabio Giovagnini <fabio.giovagnini@aurion-tech.com>
+ */
+
+#ifndef __SCI3_2_H__
+#define __SCI3_2_H__
+
 #include "contiki.h"
-#include "36064s.h"
-#include "defines-arch.h"
-#include <signal.h>
-#include <sys/unistd.h>
-#include "dev/watchdog.h"
-#include "dev/eeprom.h"
 
-#include "dev/sci3.h"
-#include "dev/sci3_2.h"
+void sci3_2_set_input(int (*input)(unsigned char c));
+void sci3_2_writeb(unsigned char c);
+void sci3_2_init(unsigned long ubr);
+unsigned char sci3_2_active(void);
 
-void h836064_cpu_init(void)
-{
-    watchdog_init();
-    sci3_init(38400);
-    sci3_2_init(38400);
-    clock_init();
-    eeprom_init();
-}
+#endif /* __SCI3_H__ */

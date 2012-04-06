@@ -46,14 +46,44 @@
 #include "dev/watchdog.h"
 #include "sys/ctimer.h"
 #include "lib/ringbuf.h"
+#ifdef CONTIKI_TARGET_ARNNANOM
+#include "printf.h" /* For printf() tiny*/
+#else
+#include <stdio.h> /* For printf() */
+#endif
 
-static int (*sci3_input_handler)(unsigned char c);
+static int (*sci3_2_input_handler)(unsigned char c);
 static volatile uint8_t transmitting;
-#define TXBUFSIZE 128
+#define TXBUFSIZE 32
 static struct ringbuf txbuf;
 static uint8_t txbuf_data[TXBUFSIZE];
 #if 0
 static volatile uint8_t rx_in_progress;
+#endif
+
+//#define __DEBUG__
+#ifdef __DEBUG__
+static unsigned char app[2];
+static const unsigned char Nib_to_Hex[16] = {0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x41,0x42,0x43,0x44,0x45,0x46};
+static void uc_to_2_cifre(unsigned char vett[2],unsigned char a1)
+{
+/* LOCAL VARIABLES */
+/* RETURN VALUE */
+/* BODY FUNCTION */
+vett[0] = Nib_to_Hex[(unsigned char) ((a1 & 0xF0) >> 4)];
+vett[1] = Nib_to_Hex[(unsigned char) ((a1 & 0x0F))];
+/* END BODY */
+}
+/*static*/ void lowlevelTx(unsigned char ch)
+{
+  /* Loop until the transmission buffer is available. */
+  while (!(SCI3_2.SSR.BIT.TDRE));
+
+  /* Transmit the data. */
+  SCI3_2.TDR = ch;
+  SCI3_2.SSR.BIT.TDRE = 0;
+}
+
 #endif
 
 static unsigned char baudrateToBRR(unsigned long baud)
@@ -72,20 +102,19 @@ static unsigned char baudrateToBRR(unsigned long baud)
 
 /*---------------------------------------------------------------------------*/
 unsigned char
-sci3_active(void)
+sci3_2_active(void)
 {
-  //return ((~ UTCTL1) & TXEPT) | rx_in_progress | transmitting;
-  return 0;
+  return (transmitting);
 }
 /*---------------------------------------------------------------------------*/
 void
-sci3_set_input(int (*input)(unsigned char c))
+sci3_2_set_input(int (*input)(unsigned char c))
 {
-  sci3_input_handler = input;
+  sci3_2_input_handler = input;
 }
 /*---------------------------------------------------------------------------*/
 void
-sci3_writeb(unsigned char c)
+sci3_2_writeb(unsigned char c)
 {
   watchdog_periodic();
 #if 1
@@ -104,18 +133,16 @@ sci3_writeb(unsigned char c)
     /*while((IFG2 & UTXIFG1) == 0);*/
     //TXBUF1 = ringbuf_get(&txbuf);
 
-    SCI3.SCR3.BYTE |= 0x04; /*  */
-    SCI3.SSR.BYTE &= ~0x04; /* reset TxEI request */
+    SCI3_2.SCR3.BYTE |= 0x04; /*  */
+    SCI3_2.SSR.BYTE &= ~0x04; /* reset TxEI request */
   }
-
 #else /* TX_WITH_INTERRUPT */
-
   /* Loop until the transmission buffer is available. */
-  while (!(SCI3.SSR.BIT.TDRE));
+  while (!(SCI3_2.SSR.BIT.TDRE));
 
   /* Transmit the data. */
-  SCI3.TDR = c;
-  SCI3.SSR.BIT.TDRE = 0;
+  SCI3_2.TDR = c;
+  SCI3_2.SSR.BIT.TDRE = 0;
 #endif /* TX_WITH_INTERRUPT */
 }
 /*---------------------------------------------------------------------------*/
@@ -124,54 +151,57 @@ sci3_writeb(unsigned char c)
  *
  */
 void
-sci3_init(unsigned long ubr)
+sci3_2_init(unsigned long ubr)
 {
 
 ringbuf_init(&txbuf, txbuf_data, sizeof(txbuf_data));
   
  
-MSTCR1.BYTE &= ~0x20; /* stop mode sci3 cleared */
+MSTCR2.BYTE &= ~0x80; /* stop mode sci3_2 cleared */
 
-IO.PMR1.BIT.TXD = 1; /* TXD = 1 */
+IO.PMR1.BIT.TXD2 = 1; /* TXD_2 = 1 */
 
-SCI3.SCR3.BYTE &= ~0x30; /*TE and  RE  disabled*/
+SCI3_2.SCR3.BYTE &= ~0x30; /*TE and  RE  disabled*/
 
-SCI3.SMR.BYTE |= (0x00 & 0x03); /*asynch. mode, 8,N,1 Clock source fixed by n value */
-SCI3.BRR = baudrateToBRR(ubr); /* with SMR it selects baud rate */
-SCI3.SCR3.BYTE &= ~0x03; /* internal clock, asynchronus mode  */
-SCI3.SCR3.BYTE |= 0x30; /*TE and  RE  enabled*/
+SCI3_2.SMR.BYTE |= (0x00 & 0x03); /*asynch. mode, 8,N,1 Clock source fixed by n value */
+SCI3_2.BRR = baudrateToBRR(ubr); /* with SMR it selects baud rate */
+SCI3_2.SCR3.BYTE &= ~0x03; /* internal clock, asynchronus mode  */
+SCI3_2.SCR3.BYTE |= 0x30; /*TE and  RE  enabled*/
 
-SCI3.SCR3.BYTE |= 0x44; /*RxI Enabled Teie enabled*/
+SCI3_2.SCR3.BYTE |= 0x44; /*RxI Enabled Teie enabled*/
 }
 
 
 /*---------------------------------------------------------------------------*/
 //Interrupt handler
-void _SCI3_(void)
+void _SCI3_2_(void)
 {
-if (SCI3.SSR.BIT.RDRF) {
-  SCI3.SSR.BIT.RDRF = 0;
+if (SCI3_2.SSR.BIT.RDRF) {
+  SCI3_2.SSR.BIT.RDRF = 0;
   reset_imask_ccr();
-  if(sci3_input_handler != NULL) {
-    if(sci3_input_handler(SCI3.RDR)) {;}
+#ifdef __DEBUG__
+  printf("%2x",SCI3_2.RDR);
+#endif
+  if(sci3_2_input_handler != NULL) {
+    if(sci3_2_input_handler(SCI3_2.RDR)) {;}
   }
 }
-else if (SCI3.SSR.BIT.OER || SCI3.SSR.BIT.FER || SCI3.SSR.BIT.PER) {
-  SCI3.SCR3.BYTE &= ~0x40;
-  SCI3.SCR3.BYTE &= ~0x10;
-  SCI3.SSR.BYTE &= ~0x78;
-  SCI3.SCR3.BYTE |= 0x10;
-  SCI3.SCR3.BYTE |= 0x40;
+else if (SCI3_2.SSR.BIT.OER || SCI3_2.SSR.BIT.FER || SCI3_2.SSR.BIT.PER) {
+  SCI3_2.SCR3.BYTE &= ~0x40;
+  SCI3_2.SCR3.BYTE &= ~0x10;
+  SCI3_2.SSR.BYTE &= ~0x78;
+  SCI3_2.SCR3.BYTE |= 0x10;
+  SCI3_2.SCR3.BYTE |= 0x40;
   reset_imask_ccr();
 }
 /*else if () {
 	}*/
-else if (SCI3.SSR.BIT.TEND) {
+else if (SCI3_2.SSR.BIT.TEND) {
 	if(ringbuf_elements(&txbuf) == 0) {
 		transmitting = 0;
-		SCI3.SCR3.BYTE &= ~0x04;
+		SCI3_2.SCR3.BYTE &= ~0x04;
 	} else {
-		SCI3.TDR = ringbuf_get(&txbuf);
+		SCI3_2.TDR = ringbuf_get(&txbuf);
 		}
 	}
 }
