@@ -82,10 +82,10 @@ PROCESS_THREAD(wismomanager_process, ev, data)
     PROCESS_WAIT_EVENT();
     if (ev == PROCESS_EVENT_TIMER) {
       switch (Status) {
-	case init_start: if (is_wismo218_Ready()) {/*printf("%s:Wismo Ready\r\n",__FUNCTION__);*/ Status = init_w_of; wismo218_Off();} etimer_set(&timer, 2 * CLOCK_SECOND); break;
-	case init_w_of: Status = init_w_on; wismo218_On(); etimer_set(&timer, 2 * CLOCK_SECOND); break;
-	case init_w_on: Status = init_w_reset; wismo218_Reset(); etimer_set(&timer, 2 * CLOCK_SECOND); break;
-	case init_w_reset: Status = init_done; /*printf("%s:Wismo Reset\r\n",__FUNCTION__);*/ break;
+	case init_start: printf("Wismo reser start...\r\n"); Status = init_w_of; etimer_set(&timer, 2 * CLOCK_SECOND); break;
+	case init_w_of: printf("off\r\n"); Status = init_w_on; wismo218_On(); etimer_set(&timer, 2 * CLOCK_SECOND); break;
+	case init_w_on: printf("on\r\n"); Status = init_w_reset; wismo218_Reset(); etimer_set(&timer, 2 * CLOCK_SECOND); break;
+	case init_w_reset: Status = init_done; break;
 	default: break; 
 	/* Broadcast event */
       }
@@ -151,30 +151,32 @@ parserAns(char* Data, wismo218Ans_t* Ans)
 void
 parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
 {
-  if (!strncmp(Cmd->Cmd,"+",1)) {
-    //printf("%s\n\r",Cmd->Cmd);
+  if (!strncmp(Cmd->Cmd,"+",1) ||
+    !strncmp(Cmd->Cmd,"E",1)
+  ) {
+    //printf("%s-%x\n\r",Cmd->Cmd,Cmd->ActivationFlags);
     if (Cmd->ActivationFlags & 0x01) {if (wismo218_sendCommand(Cmd->Cmd) < 0) printf("%s: error\r\n",Cmd->Cmd);}
     if (Cmd->ActivationFlags & 0x02) {if (wismo218_sendParams(Cmd->Params) < 0) printf("%s - %s: error\r\n",Cmd->Cmd,Cmd->Params);}
   }
-  else if (!strcmp(Cmd->Cmd,"EEPRST")) {
+  else if (!strcmp(Cmd->Cmd,"gERST")) {
     int i;
     unsigned char bff[1] = {255};
     for (i = 0; i < 128; i++) eeprom_write(i,bff,sizeof(bff));
     printf("eeprom erasing done.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"WSMON")) {
+  else if (!strcmp(Cmd->Cmd,"gON")) {
     wismo218_On();
     printf("wismo on.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"WSMOF")) {
+  else if (!strcmp(Cmd->Cmd,"gOFF")) {
     wismo218_Off();
     printf("wismo off.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"WSMRST")) {
+  else if (!strcmp(Cmd->Cmd,"gRST")) {
     wismo218_Reset();
     printf("wismo resetted.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"ENWM")) {
+  else if (!strcmp(Cmd->Cmd,"gEWM")) {
     union {
       unsigned short us;
       unsigned char bff[sizeof(unsigned short)];
@@ -184,7 +186,7 @@ parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
     eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
     printf("Welcome Message Enabled.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"DISWM")) {
+  else if (!strcmp(Cmd->Cmd,"gDWM")) {
     union {
       unsigned short us;
       unsigned char bff[sizeof(unsigned short)];
@@ -194,7 +196,7 @@ parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
     eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
     printf("Welcome Message Disabled.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"ENIDLE")) {
+  else if (!strcmp(Cmd->Cmd,"gEIDL")) {
     union {
       unsigned short us;
       unsigned char bff[sizeof(unsigned short)];
@@ -204,7 +206,7 @@ parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
     eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
     printf("IDLE Enabled.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"DISIDLE")) {
+  else if (!strcmp(Cmd->Cmd,"gDIDL")) {
     union {
       unsigned short us;
       unsigned char bff[sizeof(unsigned short)];
@@ -214,7 +216,7 @@ parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
     eeprom_write(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
     printf("IDLE Disabled.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"SETPHN")) {
+  else if (!strcmp(Cmd->Cmd,"gSPHN")) {
     unsigned char bff[PHONENUMBER_SIZE + 1];
     memset(bff,0,sizeof(bff));
     memcpy(bff,Cmd->Params,PHONENUMBER_SIZE);
@@ -223,10 +225,20 @@ parserCmdParams(wismo218Cmd_t* Cmd,char* bff)
     eeprom_write(PHONENUMBER_OFFSET,bff,PHONENUMBER_SIZE);
     printf("Fatto.\r\n");
   }
-  else if (!strcmp(Cmd->Cmd,"GETPHN")) {
+  else if (!strcmp(Cmd->Cmd,"gGPHN")) {
     unsigned char bff[PHONENUMBER_SIZE + 1];
     memset(bff,0,sizeof(bff));
     eeprom_read(PHONENUMBER_OFFSET,bff,PHONENUMBER_SIZE);
     printf("Phone Number:%s.\r\n",(char*)(bff));
   }
+  else if (!strcmp(Cmd->Cmd,"TST0")) {
+    //extern void lowlevelTx(unsigned char ch);
+    //lowlevelTx('A');
+    //lowlevelTx('T');
+    //lowlevelTx(13);
+    //lowlevelTx(10);
+    //extern void sci3_2_init(unsigned long ubr);
+    //sci3_2_init(9600);
+    printf("Comando vuoto:%s.\r\n");
+    }
 }

@@ -91,6 +91,8 @@ struct antIdleActivite {
 
 #define TIME_FOR_DATA_SCHEDULE		(4 * ONE_HOUR)
 
+#define MIN_QS_THRESHOLD		5
+
 PROCESS(antonello_process, "AntonelloApp");
 //AUTOSTART_PROCESSES(&antonello_process);
 
@@ -102,8 +104,8 @@ PROCESS_THREAD(antonello_process, ev, data)
   Status = antApp_Init;
   etimer_set(&timer, CHECKING_TIME);
   memset (&antIdleStructure,0,sizeof(antIdleStructure));
-  
   printf("AntonelloApp started.\n\r");
+
   while(1) {
     PROCESS_WAIT_EVENT();
 
@@ -150,6 +152,7 @@ PROCESS_THREAD(antonello_process, ev, data)
 	    antIdleStructure.FLAG.SendMsg = 1;
 	    Status = antApp_Getdatatime;
 	  }
+	  else {Status = antApp_GetRecMsgList;}
 	  break;
 	case antApp_SendInitWM: {
 	  printf("Send WM\r\n");
@@ -160,7 +163,7 @@ PROCESS_THREAD(antonello_process, ev, data)
 	  ParamBuffer[2 + PHONENUMBER_SIZE] = '"';
 	  ParamBuffer[3 + PHONENUMBER_SIZE] = 13;
 	  strcat(subParam1Buffer," W218 Powered on.");
-	  Wismo218Command.Cmd = (char*)(CommandList[19].CommandString); //+CMGS
+	  Wismo218Command.Cmd = (char*)(CommandList[24].CommandString); //+CMGS
 	  Wismo218Command.Params =ParamBuffer;
 	  Wismo218Command.subParams1 = subParam1Buffer;
 	  strcat(Wismo218Command.subParams1,CTRL_Z);
@@ -180,7 +183,7 @@ PROCESS_THREAD(antonello_process, ev, data)
 	  ParamBuffer[3 + PHONENUMBER_SIZE] = 13;
 	  strcat(subParam1Buffer," Cnt:");
 	  sprintf(subParam1Buffer + strlen(subParam1Buffer),"%d",antIdleStructure.counter);
-	  Wismo218Command.Cmd = (char*)(CommandList[19].CommandString); //+CMGS
+	  Wismo218Command.Cmd = (char*)(CommandList[24].CommandString); //+CMGS
 	  Wismo218Command.Params =ParamBuffer;
 	  Wismo218Command.subParams1 = subParam1Buffer;
 	  strcat(Wismo218Command.subParams1,CTRL_Z);
@@ -196,7 +199,7 @@ PROCESS_THREAD(antonello_process, ev, data)
 	  memset(ParamBuffer,0,sizeof(ParamBuffer));
 	  ParamBuffer[0] = '?';
 	  ParamBuffer[1] = 13;
-	  Wismo218Command.Cmd = (char*)(CommandList[25].CommandString); //+CCLK
+	  Wismo218Command.Cmd = (char*)(CommandList[30].CommandString); //+CCLK
 	  Wismo218Command.Params = ParamBuffer;
 	  Wismo218Command.subParams1 = 0;
 	  Wismo218Command.ActivationFlags |= 0x03;
@@ -210,6 +213,20 @@ PROCESS_THREAD(antonello_process, ev, data)
 	  memset(ParamBuffer,0,sizeof(ParamBuffer));
 	  ParamBuffer[0] = 13;
 	  Wismo218Command.Cmd = (char*)(CommandList[4].CommandString); //+CSQ
+	  Wismo218Command.Params = ParamBuffer;
+	  Wismo218Command.subParams1 = 0;
+	  Wismo218Command.ActivationFlags |= 0x03;
+	  //printf("%s\r\n",Wismo218Command.Params);
+	  //printf("%s\r\n",Wismo218Command.subParams1);
+	  Status = antApp_PostCommad;
+	  }
+	  break;
+	case antApp_GetRecMsgList : {
+	  printf("Read Message\r\n");
+	  memset(ParamBuffer,0,sizeof(ParamBuffer));
+	  ParamBuffer[0] = '=';ParamBuffer[1] = '"';
+	  strcpy(ParamBuffer + 2,"REC UNREAD"); ParamBuffer[2 + 10] = '"';ParamBuffer[2 + 10 + 1] = 13;
+	  Wismo218Command.Cmd = (char*)(CommandList[29].CommandString); //+CMGL
 	  Wismo218Command.Params = ParamBuffer;
 	  Wismo218Command.subParams1 = 0;
 	  Wismo218Command.ActivationFlags |= 0x03;
@@ -269,10 +286,20 @@ int
 parseWismo218Answer(wismo218Ans_t* Ans)
 {
   //BEGIN DEBUG
-  //printf("\r\n%s:%s\r\n",__FUNCTION__,Ans->Answer);
+  //printf("%s:%s\r\n",__FUNCTION__,Ans->Answer);
   //END DEBUG
   if (strncmp((const char*)Ans->Answer,Wismo218Command.Cmd,strlen(Wismo218Command.Cmd))) {
-    //if (Ans->Answer) printf("%s\r\n",Ans->Answer);
+    if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[29].CommandString),5)) { //+CMGL
+      if (!strncmp((const char*)Ans->Answer,"OK",2)) Status = antApp_Idle;
+      else if (!strncmp((const char*)(Ans->Answer + 2),"MGL",3)) {
+	if (Ans->Answer) {printf("%s\r\n",Ans->Answer);} // fare il parsing per accreditare il numero
+	return ANS_OK;
+      }
+      else {
+	if (Ans->Answer) {printf("%s\r\n",Ans->Answer);} // fare il parsing per fare l'azione
+	return ANS_OK;
+      }
+    }    
     return ANS_INVALID;
   }
   else {
@@ -287,19 +314,24 @@ parseWismo218Answer(wismo218Ans_t* Ans)
       Status = antApp_Error;
     }
     else if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[4].CommandString),5)) { //+CSQ
+      char *p;
       if (Ans->Answer) {
 	Ans->Answer += strlen(Wismo218Command.Cmd);
 	Ans->Answer += 2;
 	printf("%s\r\n",Ans->Answer);
       }
-      Status = antApp_Getdatatime;
-      return ANS_OK;
-      ///TODO
-      // If teh signal less than a threshold maybe can be usefull to freeze the applicazion
-      //if (!strncmp((const char*)Ans->Answer,"READY",5)) return ANS_OK;
-      //Status = antApp_Error;
+      if ((p = strchr(Ans->Answer,','))) {
+	unsigned char len = (p - Ans->Answer);
+	unsigned char qs;
+	if (len == 1) qs = (*(Ans->Answer)) - 48;
+	else if (len == 2) qs = (10 * ((*(Ans->Answer)) - 48) + ((*(Ans->Answer + 1)) - 48));
+	else qs = 0;
+	if (qs > MIN_QS_THRESHOLD) {Status = antApp_Getdatatime;return ANS_OK;}
+	printf("Quality signal %d is to loo\r\n",qs);
+	Status = antApp_Getsignallevel;
+      }
     }
-    else if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[25].CommandString),5)) { // +CCLK
+    else if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[30].CommandString),5)) { // +CCLK
       union {
 	unsigned short us;
 	unsigned char bff[sizeof(unsigned short)];
@@ -316,23 +348,23 @@ parseWismo218Answer(wismo218Ans_t* Ans)
       }
       if (antIdleStructure.FLAG.WelMsgSent == 0) {
 	eeprom_read(INITFLAG_OFFSET,tmpbff.bff,sizeof(tmpbff));
-	if (tmpbff.us & (1 << ANTAPP_IDEL_EN_BIT)) {antIdleStructure.FLAG.EnIdle = 1;}
-	else  {antIdleStructure.FLAG.EnIdle = 0;}
-	if (tmpbff.us & (1 << WM_EN_BIT)) {etimer_set(&timer, 2 * CHECKING_TIME);  Status = antApp_SendInitWM;}
-	else {antIdleStructure.FLAG.WelMsgSent = 1; Status = antApp_Idle;}
+	if (tmpbff.us & (1 << ANTAPP_IDEL_EN_BIT)) {printf("Idle cycle enabled\n\r"); antIdleStructure.FLAG.EnIdle = 1;}
+	else  {printf("Idle cycle disabled\n\r"); antIdleStructure.FLAG.EnIdle = 0;}
+	if (tmpbff.us & (1 << WM_EN_BIT)) {etimer_set(&timer, 2 * CHECKING_TIME); printf("Poweron Message enabled\n\r"); Status = antApp_SendInitWM;}
+	else {printf("Poweron Message disabled\n\r"); antIdleStructure.FLAG.WelMsgSent = 1; Status = antApp_Idle;}
       }
       else if (antIdleStructure.FLAG.SendMsg == 1) {
 	Status = antApp_SendMsg;
       }
       else Status = antApp_Idle;
     }
-    else if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[19].CommandString),5)) { //+CMGS
+    else if (!strncmp((const char*)Wismo218Command.Cmd,(char*)(CommandList[24].CommandString),5)) { //+CMGS
       Status = antApp_Idle;
       if (Ans->Answer) printf("%s\r\n",Ans->Answer);
-      if (!strncmp((const char*)(Ans->Answer),(char*)(CommandList[19].CommandString),5)) {antIdleStructure.FLAG.WelMsgSent = 1; return ANS_OK;}
+      if (!strncmp((const char*)(Ans->Answer),(char*)(CommandList[24].CommandString),5)) {antIdleStructure.FLAG.WelMsgSent = 1; return ANS_OK;}
       //Status = antApp_Error;
     }
-    else {if (Ans->Answer) printf("%s\r\n",Ans->Answer);}
+    else {/*if (Ans->Answer) printf("%s\r\n",Ans->Answer);*/}
   }
 
   return ANS_NOT;
