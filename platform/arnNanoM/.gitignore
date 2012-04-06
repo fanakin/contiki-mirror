@@ -2,3 +2,4 @@ Makefile.arnNanoM~
 clock.c~
 contiki-conf.h~
 contiki-main.c~
+eeprom.c~

@@ -13,7 +13,7 @@ WDT.TCSRWD.BYTE = 0x10;
 
 // settaggio porte non usate come output e basse
 IO.PCR1 = (BIT2 | BIT0); // P10 wismo ON. P12 wismo RST
-IO.PDR1.BYTE |= 0x05;
+IO.PDR1.BYTE &= ~0x05;
 
 IO.PCR2 = (BIT4 | BIT3 | BIT0);
 IO.PDR2.BYTE |= 0x19;
