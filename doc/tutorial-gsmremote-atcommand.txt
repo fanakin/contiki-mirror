@@ -1,0 +1,187 @@
+/**
+\addtogroup tutorials
+@{
+*/
+
+/**
+ * \defgroup tutorialgsmremote Implementing a new command for atCommand application in apps/atCommand
+ * @{
+This tutorial explains how to implement a new command under the atCommand application.
+
+
+\section toc Table of contents
+\ref introduction<br>
+\ref hardware<br>
+\ref files command_XXX.h,c files description<br>
+\ref statusCode status code to manage the response evolution<br>
+\ref commandExitCode exit code from the response handler<br>
+\ref command_XXX void* command_XXX(void* cmd, void* data) example<br>
+\ref response_XXX void* response_XXX(void* cmd, void* data, void* answer) example<br>
+
+<HR>
+\section introduction Introduction
+This tutorial explains how it is possible to expand the command set
+of teh atCommand application implemented in apps/atCommand and based
+on GSM remote board, described in platforms/arnNanoM.
+The atCommand application is used by the example atCommand implemented
+in examples/atCommand.
+
+<HR>
+\section hardware Hardware requirements
+
+To run the examples/atCommand application, you will need at least
+\li one GSM remote board.
+\li an USB-to-Serial converter;
+\li gcc cross compiler as suggestied at http://www.sics.se/contiki/wiki/index.php/Fanakin
+\li minicom or hyperterminal running at 38400 8N1
+
+
+<HR>
+\section files files description
+The implementation of a new command needs to copy the frame support command_XXX.h and \n
+command_XXX.c as command_<YOURCOMMAND>.h and command_<YOURCOMMAND>.c \n
+In the file command_<YOURCOMMAND>.h you will find the prototype of the command function and \n
+response function. If the command is a standard AT command with a standard AT response these \n
+function can be not implemented and replaced by simple define (look at CPIN command). \n
+Otherwise a clean implementation is required. \n
+In this case the developer need to: \n
+1) to write the help string in the form: \n 
+const char command_<YOURCOMMAND>_HELP_<LANGUAGECODE>[ ] = "<body of the help message>"; \n
+ex: \n
+const char command_CMGF_HELP_IT[ ] = "? (Seleziona i Messages Services)"; \n
+\n
+2) to implement the function:\n
+void* command_XXX(void* cmd, void* data)\n
+{\n
+  arnGsmRemoteCommand_t* Command = cmd;\n
+  char* Params = data;\n
+\n
+  *\n
+  * check if the Command is not void pointer \n
+  *\n
+  if (!Command) return NULL; \n
+\n  
+  *\n
+  * set the status code needed if required by the response \n
+  * to NO_STATUS, being it the initial assumed condition \n
+  * \n
+  statusCode = NO_STATUS; \n
+\n
+  //BEGIN BODY implementation \n
+  ... \n
+  ... \n
+  .. \n
+  //END BODY implementation \n
+\n
+  * \n
+  * If an event being dispatched to wismomanager is required \n
+  * set commandExitCode to 1 and return commandExitCode address \n
+  * otherwise return NULL \n
+  * \n
+  commandExitCode = 1; \n
+  return &commandExitCode; \n
+} \n
+\n
+3) to implement the function \n
+void* response_XXX(void* cmd, void* data, void* answer) \n
+{ \n
+  arnGsmRemoteCommand_t *Command = cmd; \n
+  char* Dt = data; \n
+\n
+  * \n
+  * check if the Command is not void pointer \n
+  * \n
+  if (Command == NULL) return NULL; \n
+\n
+  * \n
+  * check if data is NULL pointer \n
+  * \n
+  if (data) { \n
+    //BEGIN body implementation of the response \n
+\n
+    //END body implementation of the response \n
+    * \n
+    * If an event being dispatched to wismomanager is required \n
+    * set commandExitCode to 1 and return commandExitCode address \n
+    * otherwise return NULL \n
+    * \n
+    commandExitCode = 1; \n
+    return &commandExitCode; \n
+  } \n
+\n
+ * \n
+ * If no data are available NULL always returned \n
+ * \n
+  //printf("No data available.\r\n"); \n
+  return NULL; \n
+} \n
+
+
+<HR>
+\section statusCode Meaning of statusCode variable
+statusCode variable is a global variable used if requested to manage \n
+a state depending behaviour of the response according the evolution of the \n
+command or of the response. \n
+For example the command +CMSG="phone number" <Message Text> needs to send first \n
++CMSG="phone number"; it needs to wait '>' character answered by the modem, and only \n
+later the <Message Text> is sent to modem. \n
+Such a kind of command is state depending. \n
+
+
+<HR>
+\section commandExitCode Meaning of commandExitCode variable
+commandExitCode is a global variable for communicate to wismomanager if \n 
+the response handler needs to send event to other process.\n
+
+
+<HR>
+\section command_XXX void* command_XXX(void* cmd, void* data) example
+void* command_AT(void* cmd, void* data) \n
+{ \n
+  arnGsmRemoteCommand_t* Command = cmd;\n
+  char* Params = data;\n
+  if (!Command) return NULL;\n
+  statusCode = NO_STATUS;\n
+  if (wismo218_sendCommand(Command->Command) < 0) {\n
+    printf("%s: error\r\n",Command->Command);\n
+  }\n
+  if (Params) {\n
+    if (wismo218_sendParams(Params) < 0) {\n
+      printf("%s - %s: error\r\n",Command->Command,Params);\n
+    }\n
+  }\n
+  if (wismo218_sendParams(CR) < 0) {\n
+    printf("%s - CR: error\r\n",Command->Command);\n
+  }\n
+  commandExitCode = 1;\n
+  return &commandExitCode;\n
+}\n
+
+
+
+<HR>
+\section response_XXX void* response_XXX(void* cmd, void* data, void* answer) example
+void* response_AT(void* cmd, void* data, void* answer) \n
+{ \n
+  if (cmd == NULL) return NULL;\n
+  if (data) {\n
+    arnGsmRemoteCommand_t *Command = cmd;\n
+    char* Dt = data;\n
+    if (!strncmp(Command->Command,Dt,strlen(Command->Command))) {\n
+      Dt += strlen(Command->Command);\n
+      Dt += 2; \n
+      printf("%s\r\n",Dt);\n
+      if (answer) {\n
+	//char* Res = answer;\n
+	//strcpy(Res,Dt);\n
+      }\n
+      commandExitCode = 1;\n
+      return &commandExitCode;\n
+    }\n
+  }\n
+  //printf("No data available.\r\n");\n
+  return NULL;\n
+}\n
+
+/** @} */
+/** @} */
