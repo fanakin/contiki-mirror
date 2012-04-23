@@ -39,6 +39,7 @@
 #include "contiki.h"
 #include "WismoManager.h"
 #include "CommandManager.h"
+#include "AntonelloApp.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
 #include "printf.h" /* For printf() tiny*/
@@ -55,10 +56,9 @@ PROCESS_THREAD(gsmremote_process, ev, data)
   PROCESS_BEGIN();
 
   printf("Process Initialization...\r\n");
-
   WismoManager_Init();
   CommandManager_Init();
-
+  AntonelloApp_Init();
   printf("Process Initialization done.\n\r");
 
   PROCESS_END();
