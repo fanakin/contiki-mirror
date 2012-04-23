@@ -4,4 +4,5 @@ command_CPIN.c \
 command_CSQ.c \
 command_CSMS.c \
 command_CPMS.c \
-command_CMGF.c
+command_CMGF.c \
+command_CMGS.c

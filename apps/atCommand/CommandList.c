@@ -45,6 +45,7 @@
 #include "command_CSMS.h"
 #include "command_CPMS.h"
 #include "command_CMGF.h"
+#include "command_CMGS.h"
 //Add Here a new command header
 //END COMMAND IMPLEMENTATION HEADERS
 
@@ -79,6 +80,7 @@ const arnGsmRemoteCommand_t CommandList[] = {
 /*  3*/  {"+CSMS",command_CSMS_HELP_IT,command_CSMS,response_CSMS},
 /*  4*/  {"+CPMS",command_CPMS_HELP_IT,command_CPMS,response_CPMS},
 /*  5*/  {"+CMGF",command_CMGF_HELP_IT,command_CMGF,response_CMGF},
+/*  6*/  {"+CMGS",command_CMGS_HELP_IT,command_CMGS,response_CMGS},
 /*   */  {NULL,NULL,NULL,NULL}
 };
 

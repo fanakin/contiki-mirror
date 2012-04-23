@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: command_XXX.c,v 1.0 2012/04/06 17:00:51 fabiogiovagnini Exp $
+ * $Id: command_CMGS.c,v 1.0 2012/04/06 17:00:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
@@ -36,7 +36,7 @@
  *           $Revision: 1.0 $
  */
 /**
- * \addtogroup XXXCommand Generic AT Command implementation
+ * \addtogroup ATCommand Generic AT Command implementation
  *
  * a generic AT command prepare a command with its parameters and send it
  * to the driver understanding. The driver understanding prepends the AT
@@ -56,7 +56,7 @@
 #include <string.h>
 
 #include "CommandDef.h"
-#include "command_AT.h"
+#include "command_CMGS.h"
 #include "dev/wismo218.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
@@ -65,39 +65,73 @@
 #include <stdio.h> /* For printf() */
 #endif
 
-#define NO_STATUS	0
+/*
+ * CMGS command Help String for Italian Language
+ */ 
+const char command_CMGS_HELP_IT[] = "\"+393341234567\"\\PROVA MSG (+393341234567 numero di destinazione; PROVA MSG testo del messaggio;un solo \\ di separazione)";
+static char* Params;
+
+#define GREATHER_THEN '>'
+
+#define NO_STATUS                       0
+#define NUMBER_TO_CALL_SENT_STATUS      1
+#define TEXT_BODY_SENT_STATUS           2
+#define FIRST_ACK_RECEIVED_STATUS       3
+#define TEXT_BODY_RECEIVED_STATUS       4
+#define TOTAL_MGS_NUM_RECIVED_STATUS    5
+#define NEWLINE_RECEIVED_STATUS         6
+#define OK_ERROR_RECEIVED_STATUS        7
 
 /**
- * \brief      Standard At Command
+ * \brief      CMGS Command
  * \param cmd  pointer to arnGsmRemoteCommand_t structure of the command
  * \param data pointer to char string being the string including the parameters of the command
  * \return     NULL if the command doesn't need to dispatch an event, unsigned char* if it needs to dispatch an event.
- *             The AT command always needs to return unsigned char* and a returned value of 1
+ *             The CMGS command always needs to return unsigned char* and a returned value of 1
  *             
  * \retval 0   Not yet implemented
  * \retval 1   To dispatch the wismo218_command_event
  *
  *             This function is the generc handler for sending action requests
- *             to am module managed with AT Command.
+ *             to am module managed with CMGS Command.
  *
  *             Most of the command can be managed with this generic handler,
  *             If an exception will occor a specific handler can be implemented
  * 
  */
-void* command_XXX(void* cmd, void* data)
+void* command_CMGS(void* cmd, void* data)
 {
   arnGsmRemoteCommand_t* Command = cmd;
-  char* Params = data;
+  Params = data;
+  char *token;
+  
   if (!Command) return NULL;
+  if (!Params) return NULL;
+
   statusCode = NO_STATUS;
-  //BEGIN BODY implementation
-  //END BODY implementation
+
+  if (wismo218_sendCommand(Command->Command) < 0) {
+    printf("%s: error\r\n",Command->Command);
+    return NULL;
+  }
+  token = strsep(&Params,"\\");
+  if (token) {
+    if (wismo218_sendParams(token) < 0) {
+      printf("%s - %s: error\r\n",Command->Command,Params);
+      return NULL;
+    }
+  }
+  if (wismo218_sendParams(CR) < 0) {
+    printf("%s - CR: error\r\n",Command->Command);
+    return NULL;
+  }
+  statusCode = NUMBER_TO_CALL_SENT_STATUS;
   commandExitCode = 1;
   return &commandExitCode;
 }
 
 /**
- * \brief      Standard At response handler
+ * \brief      CMGS response handler
  * \param cmd  pointer to arnGsmRemoteCommand_t structure of the command
  * \param data pointer to char string being the answer of the command
  * \return     NULL if the command doesn't need to dispatch an event and mno error occurs,
@@ -107,32 +141,70 @@ void* command_XXX(void* cmd, void* data)
  * \retval 1   Not yet implemented
  *
  *             This function is the handler for getting back the 
- *             The answer form the +CPIN command
+ *             The answer form the +CMGS command
  *
  *             READY answer is considered good response
  *             Other answers ar considerated ERROR
  *             See WA_DEV_WISMO_UGD_012 004 November 3, 2011 wismo user AT Command manual
- *             pag.66 par 3.6.3
+ *             pag.25 par 2.4.1
  * 
  */
-void* response_XXX(void* cmd, void* data, void* answer)
+void* response_CMGS(void* cmd, void* data, void* answer)
 {
+  char *token;
+
   if (cmd == NULL) return NULL;
   if (data) {
     arnGsmRemoteCommand_t *Command = cmd;
     char* Dt = data;
-    //BEGIN body implementation of the response
-    
-    //END body implementation of the response
+    switch (statusCode) {
+      case NUMBER_TO_CALL_SENT_STATUS:
+	token = strsep(&Params,"\\");
+	if (token) {
+	  //printf("%s\r\n",token);
+	  if (wismo218_sendParams(token) < 0) {
+	    printf("token %s: error\r\n",token);
+	    return NULL;
+	  }
+	  if (wismo218_sendParams(CTRL_Z) < 0) {
+	    printf("CTRL_Z: error\r\n");
+	    return NULL;
+	  }
+	statusCode = TEXT_BODY_SENT_STATUS;
+	}
+	break;
+      case TEXT_BODY_SENT_STATUS:
+	printf("data: %s\r\n",data);
+	statusCode = FIRST_ACK_RECEIVED_STATUS;
+	break;
+      case FIRST_ACK_RECEIVED_STATUS:
+	printf("data: %s\r\n",data);
+	statusCode = TEXT_BODY_RECEIVED_STATUS;
+	break;
+      case TEXT_BODY_RECEIVED_STATUS:
+	printf("data: %s\r\n",data);
+	statusCode = TOTAL_MGS_NUM_RECIVED_STATUS;
+	break;
+      case TOTAL_MGS_NUM_RECIVED_STATUS:
+	printf("data: %s\r\n",data);
+	statusCode = NEWLINE_RECEIVED_STATUS;
+	break;
+      case NEWLINE_RECEIVED_STATUS:
+	printf("data: %s\r\n",data);
+	statusCode = OK_ERROR_RECEIVED_STATUS;
+	break;
+      case OK_ERROR_RECEIVED_STATUS:
+	printf("data: %s\r\n",data);
+	statusCode = NO_STATUS;
+	break;
+      default:
+	break;
+    }
     commandExitCode = 1;
     return &commandExitCode;
   }
-  //printf("No data available.\r\n");
+  printf("No data available.\r\n");
   return NULL;
 }
 
 /** @} */
-
-
-
-
