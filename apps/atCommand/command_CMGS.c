@@ -69,6 +69,15 @@
  * CMGS command Help String for Italian Language
  */ 
 const char command_CMGS_HELP_IT[] = "\"+393341234567\"\\PROVA MSG (+393341234567 numero di destinazione; PROVA MSG testo del messaggio;un solo \\ di separazione)";
+
+#define CMGS_info_message_TOTAL_NUM              0
+#define CMGS_info_message_SENDING_REPORT         1
+static const char *CMGS_info_message_IT[] = {
+  "Numero totale dei messaggi:",
+  "Report dell'invio:",
+  NULL
+};
+
 static char* Params;
 
 #define GREATHER_THEN '>'
@@ -79,8 +88,7 @@ static char* Params;
 #define FIRST_ACK_RECEIVED_STATUS       3
 #define TEXT_BODY_RECEIVED_STATUS       4
 #define TOTAL_MGS_NUM_RECIVED_STATUS    5
-#define NEWLINE_RECEIVED_STATUS         6
-#define OK_ERROR_RECEIVED_STATUS        7
+#define OK_ERROR_RECEIVED_STATUS        6
 
 /**
  * \brief      CMGS Command
@@ -155,7 +163,7 @@ void* response_CMGS(void* cmd, void* data, void* answer)
 
   if (cmd == NULL) return NULL;
   if (data) {
-    arnGsmRemoteCommand_t *Command = cmd;
+    //arnGsmRemoteCommand_t *Command = cmd;
     char* Dt = data;
     switch (statusCode) {
       case NUMBER_TO_CALL_SENT_STATUS:
@@ -174,27 +182,26 @@ void* response_CMGS(void* cmd, void* data, void* answer)
 	}
 	break;
       case TEXT_BODY_SENT_STATUS:
-	printf("data: %s\r\n",data);
+	//printf("data: %s\r\n",data);
 	statusCode = FIRST_ACK_RECEIVED_STATUS;
 	break;
       case FIRST_ACK_RECEIVED_STATUS:
-	printf("data: %s\r\n",data);
+	//printf("data: %s\r\n",data);
 	statusCode = TEXT_BODY_RECEIVED_STATUS;
 	break;
       case TEXT_BODY_RECEIVED_STATUS:
-	printf("data: %s\r\n",data);
+	//printf("data: %s\r\n",data);
 	statusCode = TOTAL_MGS_NUM_RECIVED_STATUS;
 	break;
       case TOTAL_MGS_NUM_RECIVED_STATUS:
-	printf("data: %s\r\n",data);
-	statusCode = NEWLINE_RECEIVED_STATUS;
-	break;
-      case NEWLINE_RECEIVED_STATUS:
-	printf("data: %s\r\n",data);
+	printf("%s%s\r\n",CMGS_info_message_IT[CMGS_info_message_TOTAL_NUM], &(Dt[7]));
 	statusCode = OK_ERROR_RECEIVED_STATUS;
 	break;
       case OK_ERROR_RECEIVED_STATUS:
-	printf("data: %s\r\n",data);
+	printf("%s:%s\r\n",CMGS_info_message_IT[CMGS_info_message_SENDING_REPORT],data);
+	if (answer) {
+	  // action to load meaningful information into answer structure
+	}
 	statusCode = NO_STATUS;
 	break;
       default:
