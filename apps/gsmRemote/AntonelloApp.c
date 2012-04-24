@@ -247,7 +247,7 @@ PROCESS_THREAD(antonello_process, ev, data)
 	struct sensors_sensor* sensor = (struct sensors_sensor*)data;
 	if (!strcmp(sensor->type,HALLEFFECT_SENSOR)) {
 	  antIdleStructure.counter = sensor->value(0);
-	  if (!(antIdleStructure.counter)) {
+	  if (!(antIdleStructure.counter % 4)) {
 	    antIdleStructure.TotalLiters++;
 	    printf("Litri:%d\r\n",antIdleStructure.TotalLiters);
 	  }
