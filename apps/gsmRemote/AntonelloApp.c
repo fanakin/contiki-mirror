@@ -73,8 +73,9 @@ static char subParam1Buffer[48];
 static antAppRTC_t DataTime;
 static int getDataTime(const char* str,antAppRTC_t* Data);
 
-struct antIdleActivite {
+struct antIdleActivity {
   unsigned long SchedTimerForData;
+  unsigned long TotalLiters;
   unsigned int counter;
   struct {
     unsigned short : 13;
@@ -181,8 +182,8 @@ PROCESS_THREAD(antonello_process, ev, data)
 	  eeprom_read(PHONENUMBER_OFFSET,((unsigned char*)ParamBuffer) + 2 ,PHONENUMBER_SIZE);
 	  ParamBuffer[2 + PHONENUMBER_SIZE] = '"';
 	  ParamBuffer[3 + PHONENUMBER_SIZE] = 13;
-	  strcat(subParam1Buffer," Cnt:");
-	  sprintf(subParam1Buffer + strlen(subParam1Buffer),"%d",antIdleStructure.counter);
+	  strcat(subParam1Buffer," Litri:");
+	  sprintf(subParam1Buffer + strlen(subParam1Buffer),"%d",antIdleStructure.TotalLiters);
 	  Wismo218Command.Cmd = (char*)(CommandList[24].CommandString); //+CMGS
 	  Wismo218Command.Params =ParamBuffer;
 	  Wismo218Command.subParams1 = subParam1Buffer;
@@ -246,7 +247,10 @@ PROCESS_THREAD(antonello_process, ev, data)
 	struct sensors_sensor* sensor = (struct sensors_sensor*)data;
 	if (!strcmp(sensor->type,HALLEFFECT_SENSOR)) {
 	  antIdleStructure.counter = sensor->value(0);
-	  printf("Counter:%d\r\n",sensor->value(0));
+	  if (!(antIdleStructure.counter)) {
+	    antIdleStructure.TotalLiters++;
+	    printf("Litri:%d\r\n",antIdleStructure.TotalLiters);
+	  }
 	}
       }
     }
