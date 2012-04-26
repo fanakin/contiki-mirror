@@ -4,7 +4,7 @@ CONTIKI_CPU=$(CONTIKI)/cpu/h836064
 
 CONTIKI_CPU_DIRS = . dev
 
-CONTIKI_SOURCEFILES += h836064.c h836064intv.c int_hdnl.c mtarch.c rtimer-arch.c watchdog.c crt0.S sci3.c sci3_2.c sci3-putchar.c
+CONTIKI_SOURCEFILES += adc.c h836064.c h836064intv.c int_hdnl.c mtarch.c rtimer-arch.c watchdog.c crt0.S sci3.c sci3_2.c sci3-putchar.c
 
 GCC_BASEDIR = /usr/local
 #GCC_VERSION = 4.0.1
