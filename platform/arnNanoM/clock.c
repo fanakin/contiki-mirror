@@ -43,6 +43,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include "dev/watchdog.h"
+#include "adc.h"
 
 static volatile clock_time_t ClkCounter; 
 #define RESET_SYSCLOCK_I (IRR2.BIT.IRRTB1 = 0)
@@ -94,6 +95,7 @@ void _TB1_TMIB1_ (void)
 {
 RESET_SYSCLOCK_I;
 ClkCounter++;
+ADC_Inth();
 //BEGIN reset watchdog: on h836064 stop of timer seem doesn't work !!! CHEWCK BETTER!!!
 	WDT.TCWD = 0;
 //END  on h836064 stop of timer seem doesn't work !!! CHEWCK BETTER!!!
