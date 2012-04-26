@@ -31,10 +31,13 @@
  * @(#)$Id: msp430.c,v 1.15 2011/01/05 13:36:38 joxe Exp $
  */
 #include "contiki.h"
-#include "36064s.h"
-#include "defines-arch.h"
+
 #include <signal.h>
 #include <sys/unistd.h>
+
+#include "36064s.h"
+#include "adc.h"
+#include "defines-arch.h"
 #include "dev/watchdog.h"
 #include "dev/eeprom.h"
 
@@ -43,6 +46,7 @@
 
 void h836064_cpu_init(void)
 {
+    initADC();
     watchdog_init();
     sci3_init(38400);
     sci3_2_init(38400);
