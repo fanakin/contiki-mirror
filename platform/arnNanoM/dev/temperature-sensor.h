@@ -48,4 +48,5 @@ extern const struct sensors_sensor temperature_sensor;
 
 #define TEMPERATURE_SENSOR "Temperature"
 
+
 #endif /* __TEMPERATURE_SENSOR_H__ */

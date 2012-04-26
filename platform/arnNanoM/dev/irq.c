@@ -24,11 +24,11 @@ IO.PDR3.BYTE = 0x00;
 //IO.PCR5 = (BIT5 | BIT4 | BIT3 | BIT2 | BIT1 | BIT0);
 //IO.PDR5.BYTE &= ~0x3F;
 
-// P60 Relay0
-// P61 Relay1
-// P62 RelayH
-// P66 TXCT-
-IO.PCR6 = (BIT0);
+// P60 
+// P61 OutC
+// P62 OutB
+// P63 OutC
+IO.PCR6 = (BIT3 | BIT2 | BIT1 | BIT0);
 IO.PDR6.BYTE |= 0x01;
 
 IO.PCR7 = (BIT6 | BIT5 | BIT4);

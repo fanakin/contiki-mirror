@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, Swedish Institute of Computer Science.
+ * Copyright (c) 2012, Aurion s.r.l. - B0logna (Italy)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,58 +26,86 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * This file is part of the Contiki operating system.
+ * This file is part of the Configurable Sensor Network Application
+ * Architecture for sensor nodes running the Contiki operating system.
  *
- * $Id: leds-arch.c,v 1.1 2012/02/14 22:41:31 fabiogiovagnini Exp $
+ * $Id: teperature-sensors.c,v 1.0 2012/04/26 20:15:55 fabiogiovagnini Exp $
+ *
+ * -----------------------------------------------------------------
+ *
+ * Author  : Fabio Giovagnini
+ * Created : 2012-04-26
+ * Updated : $Date: 2012/04/26 20:15:55 $
+ *           $Revision: 1.0 $
  */
 
-/**
- * \file
- *         A brief description of what this file is.
- * \author
- *         Fabio Giovagnini <fabio.giovagnini@auiron-tech.com>
- */
+#include "adc.h"
+#include "dev/temperature-sensor.h"
 
-#include "36064s.h"
-#include "dev/leds.h"
+#ifdef CONTIKI_TARGET_ARNNANOM
+#include "printf.h" /* For printf() tiny*/
+#else
+#include <stdio.h> /* For printf() */
+#include "../../../cpu/h836064/adc.h"
+#endif
 
-#define LED0				IO.PDR6.BIT.B1
-#define LED0_ON				LED0 = 0
-#define LED0_OF				LED0 = 1
+static unsigned short CurrentValue;
 
-#define LED1				IO.PDR6.BIT.B2
-#define LED1_ON				LED1 = 0
-#define LED1_OF				LED1 = 1
+#define SAMPLING_TIME		250 // unit ms
+static unsigned short samplingCounter;
 
-#define LED2				IO.PDR6.BIT.B3
-#define LED2_ON				LED2 = 0
-#define LED2_OF				LED2 = 1
-
-static unsigned char leds;
-/*---------------------------------------------------------------------------*/
-void
-leds_arch_init(void)
+static void temperature_sensor_handler(int value)
 {
-  leds = 0;
-  LED0_OF;
-  LED1_OF;
-  LED2_OF;
+  if (--samplingCounter) return;
+  samplingCounter = SAMPLING_TIME;
+  if (CurrentValue != value) {
+    CurrentValue = value;
+    sensors_changed(&temperature_sensor);
+    //printf("%d\r\n",CurrentValue);
+  }
+}
+
+
+/*---------------------------------------------------------------------------*/
+static int
+value(int type)
+{
+  return CurrentValue;
 }
 /*---------------------------------------------------------------------------*/
-unsigned char
-leds_arch_get(void)
+static int
+status(int type)
 {
-  return leds;
+  switch (type) {
+  case SENSORS_ACTIVE:
+  case SENSORS_READY:
+    return 1;
+  }
+  return 0;
 }
 /*---------------------------------------------------------------------------*/
-void
-leds_arch_set(unsigned char l)
+static int
+configure(int type, int value)
 {
-  if (l & LEDS_GREEN) {LED0_ON; leds |= LEDS_GREEN;}
-  else {LED0_OF; leds &= ~LEDS_GREEN;}
-  if (l & LEDS_YELLOW) {LED1_ON; leds |= LEDS_YELLOW;}
-  else {LED1_OF; leds &= ~LEDS_YELLOW;}
-  if (l & LEDS_RED) {LED2_ON; leds |= LEDS_RED;}
-  else {LED2_OF; leds &= ~LEDS_RED;}
+  switch (type) {
+  case SENSORS_ACTIVE:
+    if (value) {
+      if(!status(SENSORS_ACTIVE)) {
+      }
+    }
+    else {
+    }
+    return 1;
+  case SENSORS_HW_INIT:
+    setADCChannelHandle(0,temperature_sensor_handler);
+    CurrentValue = 0;
+    samplingCounter = SAMPLING_TIME;
+    printf(TEMPERATURE_SENSOR" Activated.\r\n");
+    return 1;
+  default: return 0;
+  }
+  return 0;
 }
 /*---------------------------------------------------------------------------*/
+SENSORS_SENSOR(temperature_sensor, TEMPERATURE_SENSOR,
+	       value, configure, status);
