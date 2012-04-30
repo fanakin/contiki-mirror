@@ -36,7 +36,7 @@
  *           $Revision: 1.0 $
  */
 /**
- * \addtogroup CPMSCommand  AT Command implementation for +CPMS
+ * \addtogroup ATCommand  AT Command implementation for +CPMS
  *
  * This command is managed with a generic AT Command handler and a generic
  * At Response handler.

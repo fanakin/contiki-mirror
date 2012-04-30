@@ -52,7 +52,6 @@
 #include "CommandManager.h"
 #include "WismoManager.h"
 #include "CommandDef.h"
-#include "eepromLayout.h"
 
 process_event_t wismo218_status_event;
 process_event_t wismo218_data_event;
@@ -60,7 +59,7 @@ static struct etimer timer;
 static wismo218_status_t Status;
 
 static arnGsmRemoteCommand_t* Command;
-static wismo218Ans_t Answer;
+static arnGsmRemoteResponse_t Answer;
 
 
 PROCESS(wismomanager_process, "WismoManager");
@@ -118,6 +117,7 @@ PROCESS_THREAD(wismomanager_process, ev, data)
 	    }
 	  }
 	}
+	else {printf("Unsolicited Command:%s\r\n",Dt);}
       }
       /* Wait until all processes have handled the wismo218_data_event line event */
       if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {

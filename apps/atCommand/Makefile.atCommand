@@ -5,4 +5,11 @@ command_CSQ.c \
 command_CSMS.c \
 command_CPMS.c \
 command_CMGF.c \
-command_CMGS.c
+command_CSCA.c \
+command_CSCB.c \
+command_CSMP.c \
+command_CNMI.c \
+command_CMGL.c \
+command_CMGS.c \
+command_CMGR.c \
+command_CMGD.c 

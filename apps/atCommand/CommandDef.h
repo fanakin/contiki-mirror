@@ -57,6 +57,22 @@ typedef struct arnGsmRemoteCommand {
 	void* (*Response_handler) (void *,void *,void *); /*!< handler for command; if NULL no handler is allowed; first parameter is arnGsmRemoteCommand_t* to the command; second is char* to data and the third is the command response */
 } arnGsmRemoteCommand_t;
 
+/*! \struct arnGsmRemoteResponse
+*  \brief Structure for generic command response
+*
+* This structure collect the meaningful part of the \n
+* response of a command if required \n
+* It is the 3rd argument of the response void* (*Response_handler) (void *,void *,void *) \n
+*
+*/
+typedef struct arnGsmRemoteResponse {
+	#define PARAM1_LEN	16
+	union {
+	  char array[PARAM1_LEN];
+	  char phonenumber[PARAM1_LEN];
+	} Param1;
+} arnGsmRemoteResponse_t;
+
 #define MAX_CMD_PARAMS_ALLOWED_LEN	128
 extern const char LF[];
 extern const char CR[];

@@ -36,7 +36,7 @@
  *           $Revision: 1.0 $
  */
 /**
- * \addtogroup CSQCommand  AT Command implementation for +CSQ
+ * \addtogroup ATCommand  AT Command implementation for +CSQ
  *
  * This command is managed with a generic AT Command handler and a generic
  * At Response handler.

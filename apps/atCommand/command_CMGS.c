@@ -198,7 +198,7 @@ void* response_CMGS(void* cmd, void* data, void* answer)
 	statusCode = OK_ERROR_RECEIVED_STATUS;
 	break;
       case OK_ERROR_RECEIVED_STATUS:
-	printf("%s:%s\r\n",CMGS_info_message_IT[CMGS_info_message_SENDING_REPORT],data);
+	printf("%s%s\r\n",CMGS_info_message_IT[CMGS_info_message_SENDING_REPORT],data);
 	if (answer) {
 	  // action to load meaningful information into answer structure
 	}

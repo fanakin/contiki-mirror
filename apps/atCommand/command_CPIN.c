@@ -36,7 +36,7 @@
  *           $Revision: 1.0 $
  */
 /**
- * \addtogroup CPINCommand AT Command implementation for +CPIN
+ * \addtogroup ATCommand AT Command implementation for +CPIN
  *
  * This command is managed with a generic AT Command handler and a generic
  * At Response handler.

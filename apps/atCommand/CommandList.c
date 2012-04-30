@@ -45,7 +45,14 @@
 #include "command_CSMS.h"
 #include "command_CPMS.h"
 #include "command_CMGF.h"
+#include "command_CSCA.h"
+#include "command_CSCB.h"
+#include "command_CSMP.h"
+#include "command_CNMI.h"
+#include "command_CMGL.h"
 #include "command_CMGS.h"
+#include "command_CMGR.h"
+#include "command_CMGD.h"
 //Add Here a new command header
 //END COMMAND IMPLEMENTATION HEADERS
 
@@ -80,7 +87,14 @@ const arnGsmRemoteCommand_t CommandList[] = {
 /*  3*/  {"+CSMS",command_CSMS_HELP_IT,command_CSMS,response_CSMS},
 /*  4*/  {"+CPMS",command_CPMS_HELP_IT,command_CPMS,response_CPMS},
 /*  5*/  {"+CMGF",command_CMGF_HELP_IT,command_CMGF,response_CMGF},
-/*  6*/  {"+CMGS",command_CMGS_HELP_IT,command_CMGS,response_CMGS},
+/*  6*/  {"+CSCA",command_CSCA_HELP_IT,command_CSCA,response_CSCA},
+/*  7*/  {"+CSCB",command_CSCB_HELP_IT,command_CSCB,response_CSCB},
+/*  8*/  {"+CSMP",command_CSMP_HELP_IT,command_CSMP,response_CSMP},
+/*  9*/  {"+CNMI",command_CNMI_HELP_IT,command_CNMI,response_CNMI},
+/* 10*/  {"+CMGL",command_CMGL_HELP_IT,command_CMGL,response_CMGL},
+/* 11*/  {"+CMGS",command_CMGS_HELP_IT,command_CMGS,response_CMGS},
+/* 12*/  {"+CMGR",command_CMGR_HELP_IT,command_CMGR,response_CMGR},
+/* 13*/  {"+CMGD",command_CMGD_HELP_IT,command_CMGD,response_CMGD},
 /*   */  {NULL,NULL,NULL,NULL}
 };
 
@@ -114,7 +128,7 @@ void* command_Help(void* cmd, void* data)
   if (data == NULL) {
     printf("%s\n\r",CommandList[0].HelpString);
     for (i = 1, pCmd = (arnGsmRemoteCommand_t*)(&CommandList[1]); pCmd->Command != NULL; ) {
-      printf("%s:%s\n\r",CommandList[i].Command,CommandList[i].HelpString);
+      printf("%s=%s\n\r",CommandList[i].Command,CommandList[i].HelpString);
       pCmd = (arnGsmRemoteCommand_t*)(&(CommandList[++i]));
       timer_set(&tmr,20);
       while (!timer_expired(&tmr));
@@ -126,7 +140,7 @@ void* command_Help(void* cmd, void* data)
     Dt++; // HELP <command>
     for (i = 1, pCmd = (arnGsmRemoteCommand_t*)(&CommandList[1]); pCmd->Command != NULL; ) {
       if (!strncmp(CommandList[i].Command,Dt,strlen(CommandList[i].Command))) {
-	printf("%s:%s\n\r",CommandList[i].Command,CommandList[i].HelpString);
+	printf("%s=%s\n\r",CommandList[i].Command,CommandList[i].HelpString);
 	return NULL;
       }
       pCmd = (arnGsmRemoteCommand_t*)(&(CommandList[++i]));
