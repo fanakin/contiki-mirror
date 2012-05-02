@@ -36,7 +36,7 @@
  *           $Revision: 1.0 $
  */
 
-#include "string.h"
+#include <string.h>
 
 
 //BEGIN COMMAND IMPLEMENTATION HEADERS

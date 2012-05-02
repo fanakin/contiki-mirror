@@ -1,4 +1,4 @@
-atCommand_src = WismoManager.c CommandManager.c CommandList.c \
+atCommand_src = WismoManager.c CommandManager.c CommandList.c simple_atoi.c \
 command_AT.c \
 command_CPIN.c \
 command_CSQ.c \
