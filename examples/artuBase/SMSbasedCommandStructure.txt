@@ -1,0 +1,36 @@
+Copyrigth: Aurion s.r.l.
+Author: Fabio Gioovagnini
+Date: 2012/04/30
+
+Table of contents
+
+1) Master Number SMS command
+
+2) Allowed Number SMS adding command
+
+3) Allowed Number SMS deleting command
+
+
+
+
+1) Master Number SMS command
+When the eeprom is completaly erased and initialized with the 32 bit (4 bytes) checking cobe "BABE",
+it is necessary to set the MASTER NUMBER.
+The master number is a phone number in the form of <country code><operator code><phone number>; i.e. in
+Italy +393351234567.
+To set a Master Number the user needs to send to Artu' an SMS in this form:
+00<blank><Master Number> 
+
+2) Allowed Number SMS adding command
+To be ready to actuate a command the source mobile phone number needs to be recognized.
+The allowed number is a phone number in the form of <country code><operator code><phone number>; i.e. in
+Italy +393351234567.
+To set an allowed number the user needs to send to Artu' an SMS in this form:
+01<blank><allowed number> 
+
+2) Allowed Number SMS deleting command
+To deny to actuate a command form a previous source mobile phone number, the number needs to be removed.
+The number is a phone number in the form of <country code><operator code><phone number>; i.e. in
+Italy +393351234567.
+To deny a number the user needs to send to Artu' an SMS in this form:
+02<blank><allowed number> 

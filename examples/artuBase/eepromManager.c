@@ -40,10 +40,25 @@
 
 #include "contiki.h"
 
+#include "dev/eeprom.h"
+
+#include "eepromLayout.h"
+
 #ifdef CONTIKI_TARGET_ARNNANOM
 #include "printf.h" /* For printf() tiny*/
 #else
 #include <stdio.h> /* For printf() */
 #endif
+
+unsigned char INIT_EEPROM_CHECK_KEY[INITKEY_SIZE] = {'B','A','B','E'};
+
+void aB_eraseEEPROM(void)
+{
+  int i;
+  unsigned char resetValue = 0xff;
+  for (i = 0; i < EEPROM_SIZE; i++) {
+    eeprom_write(i,&resetValue,sizeof(resetValue));
+  }
+}
 
 

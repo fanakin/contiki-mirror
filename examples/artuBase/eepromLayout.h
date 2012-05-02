@@ -26,40 +26,51 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: eepromManager.h,v 0.1 2012/04/06 16:50:51 fabiogiovagnini Exp $
+ * $Id: eepromLayout.h,v 0.1 2012/02/13 18:18:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
- * Author  : Fabio Giovagnini, Aurion s.r.l. (Bologna - Italy)
- * Created : 2012-04-06
- * Updated : $Date: 2012/04/06 16:50:51 $
+ * Author  : Fabio GIovagnini, Aurion s.r.l. (Bologna - Italy)
+ * Created : 2012-02-13
+ * Updated : $Date: 2012/02/13 18:18:51 $
  *           $Revision: 1.0 $
- */
-/**
- * \defgroup arnBase epprom manmager implementation
- *
- * The application needs to manage a not volatile memory (eeprom)
- * to store application related informations. This module is responsable for that
- * @{
  */
 
 #include "contiki.h"
 
-#ifndef __EEPROMMANAGER_H__
-#define __EEPROMMANAGER_H__
+#ifndef __EEPROMLAYOUT_H__
+#define __EEPROMLAYOUT_H__
 
-extern unsigned char* INIT_EEPROM_CHECK_KEY;
+#define EEPROM_SIZE		128
 
-/**
- * \brief      Erase all the eeprom memory content
- *
- *             This function erase to 0xFF all the content of the eeprom memory
- *
- *             \note This is a recovery or end line function
- *
- */
-void aB_eraseEEPROM(void);
+#define INITKEY_OFFSET		0
+#define INITKEY_SIZE		4
+
+#define INITFLAG_OFFSET		(INITKEY_OFFSET + INITKEY_SIZE)
+#define INITFLAG_SIZE		2
+	#define UNDEF_0_BIT		0
+	#define UNDEF_1_BIT		1
+	#define UNDEF_2_BIT		2
+	#define UNDEF_3_BIT		3
+	#define UNDEF_4_BIT		4
+	#define UNDEF_5_BIT		5
+	#define UNDEF_6_BIT		6
+	#define UNDEF_7_BIT		7
+	#define UNDEF_8_BIT		8
+	#define UNDEF_9_BIT		9
+	#define UNDEF_10_BIT		10
+	#define UNDEF_11_BIT		11
+	#define UNDEF_12_BIT		12
+	#define UNDEF_13_BIT		13
+	#define UNDEF_14_BIT		14
+	#define UNDEF_15_BIT		15
+
+#define TOTAL_ALLOWED_NUMBERS	4
+#define PHONENUMBER_SIZE	13
+#define PHONENUMBER_M_OFFSET	(INITFLAG_OFFSET + INITFLAG_SIZE)	// Master number
+#define PHONENUMBER_1_OFFSET	(PHONENUMBER_0_OFFSET + PHONENUMBER_SIZE)
+#define PHONENUMBER_2_OFFSET	(PHONENUMBER_1_OFFSET + PHONENUMBER_SIZE)
+#define PHONENUMBER_3_OFFSET	(PHONENUMBER_2_OFFSET + PHONENUMBER_SIZE)
+
 
 #endif
-
-/** @} */
