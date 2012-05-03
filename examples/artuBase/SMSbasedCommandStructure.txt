@@ -8,9 +8,7 @@ Table of contents
 
 2) Allowed Number SMS adding command
 
-3) Allowed Number SMS deleting command
-
-4) NOT Allowed CODES
+3) NOT Allowed CODES
 
 
 1) Master Number SMS command
@@ -39,5 +37,4 @@ ex:
 Each time from the Master number is sent a new allowed namber, the old one is overwritten.
 
 
-
-4) 00 is NOT allowed
+3) 00 is NOT allowed
