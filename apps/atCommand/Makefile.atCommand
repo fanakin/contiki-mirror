@@ -12,4 +12,5 @@ command_CNMI.c \
 command_CMGL.c \
 command_CMGS.c \
 command_CMGR.c \
-command_CMGD.c 
+command_CMGD.c \
+command_EREPP.c

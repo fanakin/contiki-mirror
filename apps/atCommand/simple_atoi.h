@@ -26,36 +26,28 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: command_CMGD.h,v 0.1 2012/04/06 16:50:51 fabiogiovagnini Exp $
+ * $Id: utilfunctions.h,v 0.1 2012/04/06 16:18:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
  * Author  : Fabio Giovagnini, Aurion s.r.l. (Bologna - Italy)
  * Created : 2012-04-06
- * Updated : $Date: 2012/04/06 16:50:51 $
+ * Updated : $Date: 2012/04/06 16:18:51 $
  *           $Revision: 1.0 $
  */
 
 #include "contiki.h"
-#include "command_AT.h"
 
-#ifndef __COMMAND_CMGD_H__
-#define __COMMAND_CMGD_H__
+#ifndef __SIMPLE_ATOI_H__
+#define __SIMPLE_ATOI_H__
 
-/*
- * CMGD command Help String for Italian Language
- */ 
-extern const char command_CMGD_HELP_IT[];
-
-/*
- * CMGD command sender is a standard command sender
- */ 
-#define command_CMGD command_AT
-
-
-/*
- * CMGD command response is NOT a standard response handler
- */ 
-void* response_CMGD(void*,void*,void*);
+/*! \fn int simple_atoi(char* str)
+ *  \brief convert the string of decimal digits str into the corresponding int value
+ *
+ * @param str string of the number
+ * @return the converted number
+ * 
+ */
+int simple_atoi(char* str);
 
 #endif

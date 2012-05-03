@@ -53,6 +53,8 @@
  * 
  */
 
+#include <string.h>
+
 #include "CommandDef.h"
 #include "command_CMGL.h"
 #include "dev/wismo218.h"
@@ -105,24 +107,30 @@ void* response_CMGR(void* cmd, void* data, void* answer)
   //char *token;
 
   if (cmd == NULL) return NULL;
+  if (answer == NULL) return NULL;
   if (data) {
     //arnGsmRemoteCommand_t *Command = cmd;
+    arnGsmRemoteResponse_t *res = answer;
+    res->type = TYPEVAL_MGR;
     char* Dt = data;
     switch (statusCode) {
       case NO_STATUS:
-	printf("---%s\r\n",Dt);
+	//printf("---%s\r\n",Dt);
 	statusCode = COMMAND_RECEIVED;
 	return NULL;
       case COMMAND_RECEIVED:
-	printf("---%s\r\n",Dt);
+	//printf("---%s\r\n",Dt);
 	statusCode = HEADER_RECEIVED;
 	return NULL;
       case HEADER_RECEIVED:
-	printf("---%s\r\n",Dt);
+	//printf("---%s\r\n",Dt);
+	memset(res->Param3.text,0,sizeof(res->Param3.text));
+	strncpy(res->Param3.text,Dt,(strlen(Dt) <= sizeof(res->Param3.text) ? strlen(Dt) : sizeof(res->Param3.text)));
 	statusCode = DATA_TEXT_RECEIVED;
-	return NULL;
+	commandExitCode = 1;
+	return &commandExitCode;
       case DATA_TEXT_RECEIVED:
-	printf("---%s\r\n",Dt);
+	//printf("---%s\r\n",Dt);
 	statusCode = NO_STATUS;
 	return NULL;
       default : break;

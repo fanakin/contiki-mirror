@@ -73,10 +73,10 @@ typedef struct arnGsmRemoteResponse {
 	union {
 	  char status;
 	} Param2;
-	#define PARAM1_LEN	16
+	#define PARAM1_LEN	18
 	union {
-	  char array[PARAM1_LEN];
 	  char phonenumber[PARAM1_LEN];
+	  char text[PARAM1_LEN];
 	} Param3;
 } arnGsmRemoteResponse_t;
 /* 
@@ -85,12 +85,30 @@ typedef struct arnGsmRemoteResponse {
 #define TYPEVAL_NONE	0
 #define TYPEVAL_MGL	1
 #define TYPEVAL_MGR	2
+#define TYPEVAL_MGD	3
 /*
  *  if type == TYPEVAL_MGL
  *  for Param1 is meaningful index: the index of the message intgo the list
  *  for Param2 is meaningful status: "REC READ", "REC UNREAD", .... (see the AT command manual)
  *  for Param3 is meaningful phonenumber: ex: "+393358350919"
+ *  if type == TYPEVAL_MGR
+ *  for Param1 is meaningless
+ *  for Param2 is meaningfulless
+ *  for Param3 is meaningful text: ex: "00 +393358350919"
+ *  if type == TYPEVAL_MGD
+ *  for Param1 is meaningless
+ *  for Param2 is meaningfulless
+ *  for Param3 is meaningful text: ex: "OK"
  */
+#define REC_READ	0
+#define REC_UNREAD	1
+#define STO_UNSENT	2
+#define STO_SENT	3
+#define ALL		4
+
+
+
+
 
 #define MAX_CMD_PARAMS_ALLOWED_LEN	128
 extern const char LF[];

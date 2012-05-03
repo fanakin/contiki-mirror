@@ -53,6 +53,7 @@
 #include "command_CMGS.h"
 #include "command_CMGR.h"
 #include "command_CMGD.h"
+#include "command_EREPP.h"
 //Add Here a new command header
 //END COMMAND IMPLEMENTATION HEADERS
 
@@ -95,6 +96,7 @@ const arnGsmRemoteCommand_t CommandList[] = {
 /* 11*/  {"+CMGS",command_CMGS_HELP_IT,command_CMGS,response_CMGS},
 /* 12*/  {"+CMGR",command_CMGR_HELP_IT,command_CMGR,response_CMGR},
 /* 13*/  {"+CMGD",command_CMGD_HELP_IT,command_CMGD,response_CMGD},
+/* 14*/  {"EREPP",command_EREPP_HELP_IT,command_EREPP,response_EREPP},
 /*   */  {NULL,NULL,NULL,NULL}
 };
 

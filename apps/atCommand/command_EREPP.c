@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: command_CMGL.c,v 1.0 2012/04/06 17:00:51 fabiogiovagnini Exp $
+ * $Id: Command_EREPP.c,v 1.0 2012/04/06 17:00:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
@@ -36,59 +36,77 @@
  *           $Revision: 1.0 $
  */
 /**
- * \addtogroup ATCommand  AT Command implementation for +CMGL
+ * \addtogroup GENCommand Generic Command implementation
  *
- * This command is managed with a generic AT Command handler and a generic
- * At Response handler.
- * See command_AT.h,c
+ * a generic command prepare a command with its parameters and send it
+ * to the driver understanding. The driver understanding 
+ * what the specific hardware expects and send really to the
+ * device.
  *
  * @{
  */
 
 /**
  * \file
- *         Implementation of the CNMI handler of an AT command to send
+ *         Implementation of the generic handler of an generic command to send
  * \author
  *         Fabio Giovagnini <fabio.giovagnini@aurion-tech.com>
  * 
  */
-
 #include <string.h>
 
-#include "simple_atoi.h"
 #include "CommandDef.h"
-#include "command_CMGL.h"
-#include "dev/wismo218.h"
+#include "command_EREPP.h"
+#include "dev/eeprom.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
 #include "printf.h" /* For printf() tiny*/
 #else
 #include <stdio.h> /* For printf() */
+#include "command_EREPP.h"
 #endif
 
-/*
- * CMGL command Help String for Italian Language
- */ 
-const char command_CMGL_HELP_IT[] = "? (Seleziona i Messages Services)";
-
-/*
- * CMGL command sender is a standard command sender
- */ 
-
 #define NO_STATUS                       0
-#define COMMAND_RECEIVED                1
-#define HEADER_RECEIVED                 2
-#define DATA_TEXT_RECEIVED              3
-#define OK_ERR_RECEIVED                 4
-
-static void parseHeader(char* Hd,arnGsmRemoteResponse_t *res);
-static char toSTAValue(char* text);
 
 /*
- * CMGL command response is a standard response handler
+ * EREPP command Help String for Italian Language
  */ 
+const char command_EREPP_HELP_IT[] = "Setta l'intera eeprom al valore di default 0xff";
+
 /**
- * \brief      CMGL response handler
+ * \brief      Standard At Command
+ * \param cmd  pointer to arnGsmRemoteCommand_t structure of the command
+ * \param data pointer to char string being the string including the parameters of the command
+ * \return     NULL if the command doesn't need to dispatch an event, unsigned char* if it needs to dispatch an event.
+ *             The AT command always needs to return unsigned char* and a returned value of 1
+ *             
+ * \retval 0   Not yet implemented
+ * \retval 1   To dispatch the wismo218_command_event
+ *
+ *             This function is the generc handler for sending action requests
+ *             to am module managed with AT Command.
+ *
+ *             Most of the command can be managed with this generic handler,
+ *             If an exception will occor a specific handler can be implemented
+ * 
+ */
+void* command_EREPP(void* cmd, void* data)
+{
+  arnGsmRemoteCommand_t* Command = cmd;
+  int i;
+  if (!Command) return NULL;
+  statusCode = NO_STATUS;
+  unsigned char resetValue = 0xff;
+  //NOTE data should have the string of the size of the eeprom
+  for (i = 0; i < 128; i++) {
+    eeprom_write(i,&resetValue,sizeof(resetValue));
+  }
+  printf("eeprom erased\r\n");
+  return NULL;
+}
+
+/**
+ * \brief      CPIN response handler
  * \param cmd  pointer to arnGsmRemoteCommand_t structure of the command
  * \param data pointer to char string being the answer of the command
  * \return     NULL if the command doesn't need to dispatch an event and mno error occurs,
@@ -98,64 +116,17 @@ static char toSTAValue(char* text);
  * \retval 1   Not yet implemented
  *
  *             This function is the handler for getting back the 
- *             The answer form the +CMGS command
+ *             The answer form the +CPIN command
  *
  *             READY answer is considered good response
  *             Other answers ar considerated ERROR
  *             See WA_DEV_WISMO_UGD_012 004 November 3, 2011 wismo user AT Command manual
- *             pag.25 par 2.4.1
+ *             pag.66 par 3.6.3
  * 
  */
-void* response_CMGL(void* cmd, void* data, void* answer)
+void* response_EREPP(void* cmd, void* data, void* answer)
 {
-  if (cmd == NULL) return NULL;
-  if (answer == NULL) return NULL;
-  if (data) {
-    //arnGsmRemoteCommand_t *Command = cmd;
-    arnGsmRemoteResponse_t *res = answer;
-    char* Dt = data;
-    res->type = TYPEVAL_MGL;
-    switch (statusCode) {
-      case NO_STATUS:
-	statusCode = COMMAND_RECEIVED;
-	return NULL;
-      case COMMAND_RECEIVED:
-	parseHeader(Dt,res);
-	if (!strncmp(Dt,"OK",2)) {/*printf("OK\r\n");*/ statusCode = NO_STATUS; commandExitCode = 1; return &commandExitCode;}
-	else statusCode = HEADER_RECEIVED;
-	return NULL;
-      case HEADER_RECEIVED: {
-	statusCode = COMMAND_RECEIVED;
-	}
-	return NULL;
-      default : break;
-    }
-  }
   return NULL;
-}
-
-void parseHeader(char* Hd,arnGsmRemoteResponse_t *res)
-{
-    char *token;
-    token = strsep(&Hd,":");
-    //if (token) ;
-    token = strsep(&Hd,",");
-    if (token) {res->Param1.index= simple_atoi(token); /*printf("%d\r\n",res->Param1.index);*/}
-    token = strsep(&Hd,",");
-    if (token) {res->Param2.status = toSTAValue(token); /*printf("%d\r\n",res->Param2.status);*/}
-    token = strsep(&Hd,",");
-    if (token) {strcpy(res->Param3.phonenumber,token + 1);res->Param3.phonenumber[strlen(res->Param3.phonenumber) - 1] = 0; /*printf("%s\r\n",res->Param3.phonenumber);*/}
-    //token = strsep(&Hd,",");
-    //if (token) ;
-    //token = strsep(&Hd,",");
-    //if (token);
-}
-
-static char toSTAValue(char* text)
-{
-  if (!strcmp(text,"\"REC READ\"")) return REC_READ;
-  else if (!strcmp(text,"\"REC UNREAD\"")) return REC_UNREAD;
-  else return -1;
 }
 
 /** @} */

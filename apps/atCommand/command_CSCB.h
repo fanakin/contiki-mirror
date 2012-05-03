@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: command_CMGD.h,v 0.1 2012/04/06 16:50:51 fabiogiovagnini Exp $
+ * $Id: command_CSCB.h,v 0.1 2012/04/06 16:50:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
@@ -39,23 +39,23 @@
 #include "contiki.h"
 #include "command_AT.h"
 
-#ifndef __COMMAND_CMGD_H__
-#define __COMMAND_CMGD_H__
+#ifndef __COMMAND_CSCB_H__
+#define __COMMAND_CSCB_H__
 
 /*
- * CMGD command Help String for Italian Language
+ * CSCB command Help String for Italian Language
  */ 
-extern const char command_CMGD_HELP_IT[];
+extern const char command_CSCB_HELP_IT[];
 
 /*
- * CMGD command sender is a standard command sender
+ * CSCB command sender is a standard command sender
  */ 
-#define command_CMGD command_AT
+#define command_CSCB command_AT
 
 
 /*
- * CMGD command response is NOT a standard response handler
+ * CSCB command response is a standard response handler
  */ 
-void* response_CMGD(void*,void*,void*);
+#define response_CSCB response_AT
 
 #endif

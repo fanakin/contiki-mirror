@@ -26,36 +26,39 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: command_CMGD.h,v 0.1 2012/04/06 16:50:51 fabiogiovagnini Exp $
+ * $Id: utilfunctions.c,v 1.0 2012/03/01 18:18:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
  * Author  : Fabio Giovagnini, Aurion s.r.l. (Bologna - Italy)
- * Created : 2012-04-06
- * Updated : $Date: 2012/04/06 16:50:51 $
+ * Created : 2012-03-01
+ * Updated : $Date: 2012/03/01 18:18:51 $
  *           $Revision: 1.0 $
  */
 
-#include "contiki.h"
-#include "command_AT.h"
+#include <string.h>
 
-#ifndef __COMMAND_CMGD_H__
-#define __COMMAND_CMGD_H__
-
-/*
- * CMGD command Help String for Italian Language
- */ 
-extern const char command_CMGD_HELP_IT[];
-
-/*
- * CMGD command sender is a standard command sender
- */ 
-#define command_CMGD command_AT
-
-
-/*
- * CMGD command response is NOT a standard response handler
- */ 
-void* response_CMGD(void*,void*,void*);
-
+#ifdef CONTIKI_TARGET_ARNNANOM
+#include "printf.h" /* For printf() tiny*/
+#else
+#include <stdio.h> /* For printf() */
 #endif
+
+int simple_atoi(char* s)
+{
+  #define MAX_LEN_ALLOWED 11
+  // to convert input like '1234' to 1234.
+  int ret = 0;
+  int len = 0;
+  signed char signum = 1;
+  if (s == NULL) return -1;
+  while (1) {
+    if (!(*s)) break;
+    if (len == MAX_LEN_ALLOWED) break;
+    if ((*s) == '-') signum = -1;
+    else if ((*s >= '0')&& (*s <= '9')) ret = (ret*10) + (*s - '0');
+    s++;
+    len++;
+  }
+  return (ret * signum);
+}

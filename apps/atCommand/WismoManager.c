@@ -79,7 +79,7 @@ PROCESS_THREAD(wismomanager_process, ev, data)
     PROCESS_WAIT_EVENT();
     if (ev == PROCESS_EVENT_TIMER) {
       switch (Status) {
-	case init_start: printf("Wismo reser start...\r\n"); Status = init_w_of; etimer_set(&timer, 2 * CLOCK_SECOND); break;
+	case init_start: printf("Wismo reset start...\r\n"); Status = init_w_of; etimer_set(&timer, 2 * CLOCK_SECOND); break;
 	case init_w_of: printf("off\r\n"); Status = init_w_on; wismo218_On(); etimer_set(&timer, 2 * CLOCK_SECOND); break;
 	case init_w_on: printf("on\r\n"); Status = init_w_reset; wismo218_Reset(); etimer_set(&timer, 2 * CLOCK_SECOND); break;
 	case init_w_reset: Status = init_done; break;
@@ -117,7 +117,7 @@ PROCESS_THREAD(wismomanager_process, ev, data)
 	    }
 	  }
 	}
-	else {printf("Unsolicited Command:%s\r\n",Dt);}
+	else {/*printf("Unsolicited Command:%s\r\n",Dt);*/}
       }
       /* Wait until all processes have handled the wismo218_data_event line event */
       if(PROCESS_ERR_OK == process_post(PROCESS_CURRENT(), PROCESS_EVENT_CONTINUE, NULL)) {

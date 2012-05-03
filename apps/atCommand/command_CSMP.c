@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: command_CMGD.c,v 1.0 2012/04/06 17:00:51 fabiogiovagnini Exp $
+ * $Id: command_CSMP.c,v 1.0 2012/04/06 17:00:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
@@ -36,7 +36,7 @@
  *           $Revision: 1.0 $
  */
 /**
- * \addtogroup ATCommand  AT Command implementation for +CMGD
+ * \addtogroup ATCommand  AT Command implementation for +CSMP
  *
  * This command is managed with a generic AT Command handler and a generic
  * At Response handler.
@@ -47,16 +47,14 @@
 
 /**
  * \file
- *         Implementation of the CNMI handler of an AT command to send
+ *         Implementation of the CSMP handler of an AT command to send
  * \author
  *         Fabio Giovagnini <fabio.giovagnini@aurion-tech.com>
  * 
  */
 
-#include <string.h>
-
 #include "CommandDef.h"
-#include "command_CMGD.h"
+#include "command_CPIN.h"
 #include "dev/wismo218.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
@@ -65,62 +63,18 @@
 #include <stdio.h> /* For printf() */
 #endif
 
-#define NO_STATUS                       0
-#define COMMAND_RECEIVED                1
+/*
+ * CSMP command Help String for Italian Language
+ */ 
+const char command_CSMP_HELP_IT[] = "? (Seleziona i Messages Services)";
 
 /*
- * CMGD command Help String for Italian Language
+ * CSMP command sender is a standard command sender
  */ 
-const char command_CMGD_HELP_IT[] = "<i>,<df> cancella i messaggi tutti se df=4";
 
 /*
- * CMGD command sender is a standard command sender
+ * CSMP responsa handler is a standard response handler
  */ 
-
-/**
- * \brief      CMGD response handler
- * \param cmd  pointer to arnGsmRemoteCommand_t structure of the command
- * \param data pointer to char string being the answer of the command
- * \return     NULL if the command doesn't need to dispatch an event and mno error occurs,
- *             unsigned char* if it needs to dispatch an event or an error occurs.
- *             
- * \retval 0   An error occurs; examine data to know exactly
- * \retval 1   Not yet implemented
- *
- *             This function is the handler for getting back the 
- *             The answer form the +CPIN command
- *
- *             READY answer is considered good response
- *             Other answers ar considerated ERROR
- *             See WA_DEV_WISMO_UGD_012 004 November 3, 2011 wismo user AT Command manual
- *             pag.66 par 3.6.3
- * 
- */
-void* response_CMGD(void* cmd, void* data, void* answer)
-{
-  if (cmd == NULL) return NULL;
-  if (answer == NULL) return NULL;
-  if (data) {
-    //arnGsmRemoteCommand_t *Command = cmd;
-    arnGsmRemoteResponse_t *res = answer;
-    res->type = TYPEVAL_MGD;
-    char* Dt = data;
-    switch (statusCode) {
-      case NO_STATUS:
-	//printf("---%s\r\n",Dt);
-	statusCode = COMMAND_RECEIVED;
-	return NULL;
-      case COMMAND_RECEIVED:
-	memset(res->Param3.text,0,sizeof(res->Param3.text));
-	strncpy(res->Param3.text,Dt,(strlen(Dt) <= sizeof(res->Param3.text) ? strlen(Dt) : sizeof(res->Param3.text)));
-	statusCode = NO_STATUS;
-	commandExitCode = 1;
-	return &commandExitCode;
-      default : break;
-    }
-  }
-  return NULL;
-}
 
 
 /** @} */
