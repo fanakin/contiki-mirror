@@ -1,5 +1,5 @@
 Copyrigth: Aurion s.r.l.
-Author: Fabio Gioovagnini
+Author: Fabio Giovagnini
 Date: 2012/04/30
 
 Table of contents
@@ -10,7 +10,7 @@ Table of contents
 
 3) Allowed Number SMS deleting command
 
-
+4) NOT Allowed CODES
 
 
 1) Master Number SMS command
@@ -19,18 +19,25 @@ it is necessary to set the MASTER NUMBER.
 The master number is a phone number in the form of <country code><operator code><phone number>; i.e. in
 Italy +393351234567.
 To set a Master Number the user needs to send to Artu' an SMS in this form:
-00<blank><Master Number> 
+1<blank><Master Number>
+ex:
+1 +393351234567 
 
 2) Allowed Number SMS adding command
 To be ready to actuate a command the source mobile phone number needs to be recognized.
 The allowed number is a phone number in the form of <country code><operator code><phone number>; i.e. in
 Italy +393351234567.
-To set an allowed number the user needs to send to Artu' an SMS in this form:
-01<blank><allowed number> 
+To set an allowed number the user needs to send to Artu' an SMS from the Master Number in this form:
+2<blank><allowed number> for the 1st allowed number other then the Master Number
+3<blank><allowed number> for the 2nd allowed number other then the Master Number
+4<blank><allowed number> for the 3rd allowed number other then the Master Number
+ex:
+2 +393351234567 
+3 +393361234567 
+4 +393371234567 
 
-2) Allowed Number SMS deleting command
-To deny to actuate a command form a previous source mobile phone number, the number needs to be removed.
-The number is a phone number in the form of <country code><operator code><phone number>; i.e. in
-Italy +393351234567.
-To deny a number the user needs to send to Artu' an SMS in this form:
-02<blank><allowed number> 
+Each time from the Master number is sent a new allowed namber, the old one is overwritten.
+
+
+
+4) 00 is NOT allowed
