@@ -44,6 +44,7 @@
 #include "dev/leds.h"
 #include "dev/temperature-sensor.h"
 #include "dev/halleffect-sensor.h"
+#include "dev/voltage-sensor.h"
 #include "dev/eeprom.h"
 
 #include "CommandDef.h"
@@ -64,6 +65,9 @@
 static char cnstCmd[COMMAND_BUFFER_LEN];// = "+CMGS=\"+393358350919\"\\Alarm!!!!";
 static arnGsmRemoteCommand_t* CurrentCommand;
 static void temperatureSensorHadler(struct sensors_sensor* sensor);
+static void hallEffectHandler(struct sensors_sensor* sensor);
+static void VoltageSensorHandler(struct sensors_sensor* sensor);
+
 static void idleHandler(void);
 static void wismoEventHandler(arnGsmRemoteResponse_t* Answer);
 
@@ -87,6 +91,7 @@ typedef enum aBStatus {
   aB_SEND_MGR, //8
   aB_ERASEALLSMS, //9
   aB_SEND_MGD, //10
+  aB_SEND_MGS, //11
   aB_ERROR,
 } aBStatus_t;
 static void sendATCommand(const char* cmd, aBStatus_t exitsts);
@@ -98,10 +103,11 @@ static enum {
 } errCode;
 
 static struct {
-  unsigned char : 5;
+  unsigned char : 4;
+  unsigned char TempLow : 1;
+  unsigned char TempHigh : 1;
   unsigned char PhNumberAllowed : 1;
   unsigned char hwinitDone : 1;
-  unsigned char on : 1;
 } flags;
 
 #define IDLE_POLLING_TIME	1 * CLOCK_SECOND
@@ -114,13 +120,26 @@ static const unsigned short PHN_OFFSET[TOTAL_ALLOWED_NUMBERS] = {
   PHONENUMBER_3_OFFSET
 };
 
-PROCESS(artuDemo_process, "artuBase");
+#define OUTA	LEDS_RED		// see platform/arnNanoM/dev/led-arch.c and the schematic
+#define OUTB	LEDS_YELLOW		// see platform/arnNanoM/dev/led-arch.c and the schematic
+#define OUTC	LEDS_GREEN		// see platform/arnNanoM/dev/led-arch.c and the schematic
 
+static signed short tempThLower;
+static signed short tempThHigher;
+#define TEMP_SENDING_TIME	(((unsigned short)60) * CLOCK_SECOND)
+static struct etimer TempSendingTimer;
+static unsigned char phnIndex;
+static void initTempTh(void);
+static signed short TempRawToScaled(unsigned short raw);
+
+
+static const char NUM_NON_AMESSO_MSG[] = "Numero non ammesso"; 
+
+PROCESS(artuDemo_process, "artuBase");
 AUTOSTART_PROCESSES(&artuDemo_process);
 
 PROCESS_THREAD(artuDemo_process, ev, data)
 {
-
   PROCESS_EXITHANDLER(goto exit);
   PROCESS_BEGIN();
 
@@ -129,12 +148,15 @@ PROCESS_THREAD(artuDemo_process, ev, data)
   CommandManager_Init();
   printf("Process Initialization done.\n\r");
 
-  flags.hwinitDone = 0;
-  flags.on = 0;
-  flags.PhNumberAllowed = 0;
-  leds_on(LEDS_RED); 
   CurrentCommand = NULL;
-  
+  flags.hwinitDone = 0;
+  flags.PhNumberAllowed = 0;
+  flags.TempHigh = 0;
+  flags.TempLow = 0;
+
+  leds_on(LEDS_RED); 
+  phnIndex = 0;
+
   while(1) {
     PROCESS_WAIT_EVENT();
 
@@ -143,11 +165,11 @@ PROCESS_THREAD(artuDemo_process, ev, data)
 	if ((*((wismo218_status_t*)data)) == init_done) {
 	  flags.hwinitDone = 1;
 	  /*
-	   *  The idel status is initialized to NONE at the end of HW initialization
+	   *  The idle status is initialized to NONE at the end of HW initialization
 	   */
 	  aBStatus = aB_NONE;
 	  /*
-	   * At this point of execution for sure NONE error code detected
+	   *  At this point of execution for sure NONE error code detected
 	   */
 	  errCode = aBeC_NONE;
 	  /*
@@ -164,8 +186,16 @@ PROCESS_THREAD(artuDemo_process, ev, data)
       }
     }
     else if (ev == PROCESS_EVENT_TIMER) {
-      etimer_set(&idlePollingTimer, IDLE_POLLING_TIME);
-      idleHandler();
+      if (data) {
+	struct etimer* timer = data;
+	if (timer == &idlePollingTimer) {
+	  etimer_set(&idlePollingTimer, IDLE_POLLING_TIME);
+	  idleHandler();
+	}
+	else if (timer == &TempSendingTimer) {
+	  
+	}
+      }
     }
     else if(ev == sensors_event) {
       if ((flags.hwinitDone == 1) && (data != NULL)) {
@@ -174,7 +204,10 @@ PROCESS_THREAD(artuDemo_process, ev, data)
 	  temperatureSensorHadler(sensor);
 	}
 	else if (!strcmp(sensor->type,HALLEFFECT_SENSOR)) {
-	  printf("HallEffect Counter:%d\r\n",sensor->value(SENSORS_READY));
+	  hallEffectHandler(sensor);
+	}
+	else if (!strcmp(sensor->type,VOLTAGE_SENSOR)) {
+	  VoltageSensorHandler(sensor);
 	}
       }
       /* 
@@ -204,47 +237,6 @@ PROCESS_THREAD(artuDemo_process, ev, data)
 }
 
 
-void temperatureSensorHadler(struct sensors_sensor* sensor)
-{
-#if 0
-  int v = sensor->value(SENSORS_READY);
-  //printf("Temperature value:%d\r\n",v);
-  if (!flags.on) {
-    if (v > 600) {
-      flags.on = 1;
-      leds_off(LEDS_RED); // inverted logic
-    }
-  }
-  else {
-    if (v < 400) {
-      flags.on = 0;
-      leds_on(LEDS_RED); // inverted logic
-      if (flags.messageAlarmTrigger == 0) {
-	char* CommandParameters;
-	char* Dt = cnstCmd;
-	flags.messageAlarmTrigger = 1;
-	CurrentCommand = arnCommand(Dt);
-	//printf("%s:%s\n\r",__FUNCTION__,Dt);
-	if (CurrentCommand) {
-	  char* pres; 
-	  CommandParameters = arnCommandParameters(CurrentCommand,Dt);
-	  if (CurrentCommand->Command_handler) {
-	    pres = CurrentCommand->Command_handler(CurrentCommand,CommandParameters);
-	    if (pres) {
-	      if (*pres == 1) {
-		process_post(PROCESS_BROADCAST, wismo218_command_event, CurrentCommand);
-	      }
-	    }
-	  }
-	}
-	else printf("Unimplemented Command\n\r");
-	CurrentCommand = 0;
-      }
-    }
-  }
-#endif
-}
-
 void idleHandler(void)
 {
   //BEGIN
@@ -260,11 +252,16 @@ void idleHandler(void)
       eeprom_read(INITKEY_OFFSET,tmpBff,sizeof(tmpBff));
       if (!strncmp((char*)tmpBff,(char*)INIT_EEPROM_CHECK_KEY,sizeof(tmpBff))) {
 	printf("Eeprom verificata\n\r");
+	initTempTh();
 	aBStatus = aB_CHECKFORALLOWEDNUMBERS;
       }
       else {
+	unsigned short tmp = ((1 << TLOEN_0_BIT) || (1 << TLOEN_0_BIT));
 	aB_eraseEEPROM();
 	eeprom_write(INITKEY_OFFSET,INIT_EEPROM_CHECK_KEY,INITKEY_SIZE);
+	eeprom_write(INITFLAG_OFFSET,(unsigned char*)&tmp,INITFLAG_SIZE);
+	tmp = 100; eeprom_write(TEMP_TH_LOWER_OFFSET,(unsigned char*)&tmp,TEMP_TH_LOWER_SIZE);
+	tmp = 0; eeprom_write(TEMP_TH_HIGHER_OFFSET,(unsigned char*)&tmp,TEMP_TH_HIGHER_SIZE);
 	printf("Eeprom Inizializzata\n\r");
       }
     }
@@ -381,15 +378,67 @@ void wismoEventHandler(arnGsmRemoteResponse_t* Answer)
 	      !strcmp(token,"on")
 	    ) {
 	      printf("2:%s\r\n",token);
-	      leds_off(LEDS_RED); // inverted logic
+	      leds_off(OUTA); // inverted logic
 	    }
 	    else if (!strcmp(token,"OFF") ||
 	      !strcmp(token,"off")
 	    ) {
 	      printf("2:%s\r\n",token);
-	      leds_on(LEDS_RED); // inverted logic
+	      leds_on(OUTA); // inverted logic
 	    }
 	  }
+	break;
+	case 11:
+	  token = Answer->Param3.text + strlen(token) + 1;
+	  if (token) {
+	    if (!strcmp(token,"ON") ||
+	      !strcmp(token,"on")
+	    ) {
+	      printf("2:%s\r\n",token);
+	      leds_off(OUTB); // inverted logic
+	    }
+	    else if (!strcmp(token,"OFF") ||
+	      !strcmp(token,"off")
+	    ) {
+	      printf("2:%s\r\n",token);
+	      leds_on(OUTB); // inverted logic
+	    }
+	  }
+	break;
+	case 12:
+	  token = Answer->Param3.text + strlen(token) + 1;
+	  if (token) {
+	    if (!strcmp(token,"ON") ||
+	      !strcmp(token,"on")
+	    ) {
+	      printf("2:%s\r\n",token);
+	      leds_off(OUTC); // inverted logic
+	    }
+	    else if (!strcmp(token,"OFF") ||
+	      !strcmp(token,"off")
+	    ) {
+	      printf("2:%s\r\n",token);
+	      leds_on(OUTC); // inverted logic
+	    }
+	  }
+	break;
+	case 20: {
+	  token = Answer->Param3.text + strlen(token) + 1;
+	  if (token) {
+	    tempThLower = simple_atoi(token);
+	    printf("dato:%d\r\n",tempThLower);
+	    eeprom_write(TEMP_TH_LOWER_OFFSET,(unsigned char*)&tempThLower,TEMP_TH_LOWER_SIZE);
+	  }
+	}
+	break;
+	case 21: {
+	  token = Answer->Param3.text + strlen(token) + 1;
+	  if (token) {
+	    tempThHigher = simple_atoi(token);
+	    printf("dato:%d\r\n",tempThHigher);
+	    eeprom_write(TEMP_TH_HIGHER_OFFSET,(unsigned char*)&tempThHigher,TEMP_TH_HIGHER_SIZE);
+	  }
+	}
 	break;
 	default:
 	break;
@@ -401,8 +450,14 @@ void wismoEventHandler(arnGsmRemoteResponse_t* Answer)
     }
   }
   else if (Answer->type == TYPEVAL_MGD) {
-    printf("%s\r\n",Answer->Param3.text);
+    printf("Canc:%s\r\n",Answer->Param3.text);
     aBStatus = aB_WAITFORSMS;
+    memset(Answer,0,sizeof(arnGsmRemoteResponse_t));
+    CurrentCommand = NULL;
+  }
+  else if (Answer->type == TYPEVAL_MGS) {
+    printf("report Invio:%s\r\n",Answer->Param3.text);
+    aBStatus = aB_ERASEALLSMS;
     memset(Answer,0,sizeof(arnGsmRemoteResponse_t));
     CurrentCommand = NULL;
   }
@@ -431,6 +486,64 @@ void sendATCommand(const char* cmd, aBStatus_t exitsts)
       }
     }
   }
+}
+
+void temperatureSensorHadler(struct sensors_sensor* sensor)
+{
+  int v = TempRawToScaled(sensor->value(SENSORS_READY));
+  //printf("Temperature value:%d\r\n",v);
+  /*
+   *  Higher Threshold
+   */
+  if (!flags.TempHigh) {
+    if (v > tempThHigher) {
+      //+CMGS=\"+393358350919\"\\Alarm!!!!
+      char tmpbuff[48];
+      strcpy(tmpbuff,"+CMGS=\"");
+      eeprom_read(PHN_OFFSET[phnIndex],((unsigned char*)tmpbuff) + 7,PHONENUMBER_SIZE);
+      //NOTE maybe a coherence check on the phone number can be usefull
+      if (PhoneNumberChecker(((unsigned char*)tmpbuff) + 7) == PHN_OK) {
+	strcpy(tmpbuff + 7 + PHONENUMBER_SIZE,"\"\\Temp H");
+	flags.TempHigh = 1;
+	sendATCommand(tmpbuff,aB_SEND_MGS);
+	etimer_set(&TempSendingTimer, TEMP_SENDING_TIME);
+	printf("T HI\r\n");
+      }
+      else {printf("%s\r\n",NUM_NON_AMESSO_MSG);}
+    }
+  }
+  else {
+    if (v < (tempThHigher - 2)) {
+      flags.TempHigh = 0;
+      phnIndex = 0;
+      //sendATCommand(
+    }
+  }
+  
+  /*
+   *  Lower Threshold
+   */
+  if (!flags.TempLow) {
+    if (v > tempThLower) {
+      flags.TempLow = 1;
+      //sendATCommand(
+    }
+  }
+  else {
+    if (v < (tempThLower - 2)) {
+      flags.TempLow = 0;
+      phnIndex = 0;
+      //sendATCommand(
+    }
+  }
+}
+
+signed short TempRawToScaled(unsigned short raw)
+{
+  /*
+   *  Insert here the scaling formula or table
+   */
+  return raw;
 }
 
 unsigned char PhoneNumberChecker(unsigned char* phn)
@@ -470,4 +583,35 @@ unsigned char isPhNumberAllowed(unsigned char* phn)
     if (!memcmp(tmpBff,phn,PHONENUMBER_SIZE)) return 1;
   }
   return 0;
+}
+
+void initTempTh(void)
+{
+  eeprom_read(TEMP_TH_LOWER_OFFSET,(unsigned char*)&tempThLower,sizeof(tempThLower));
+  eeprom_read(TEMP_TH_HIGHER_OFFSET,(unsigned char*)&tempThHigher,sizeof(tempThHigher));
+  if (tempThLower == 0xffff) tempThLower = 0;
+  else if ((tempThHigher != 0xffff) && (tempThLower >= tempThHigher)) tempThLower = 0;
+}
+
+
+void hallEffectHandler(struct sensors_sensor* sensor)
+{
+  printf("HallEffect Counter:%d\r\n",sensor->value(SENSORS_READY));
+  //+CMGS=\"+393358350919\"\\Alarm!!!!
+  char tmpbuff[48];
+  strcpy(tmpbuff,"+CMGS=\"");
+  eeprom_read(PHN_OFFSET[0],((unsigned char*)tmpbuff) + 7,PHONENUMBER_SIZE);
+  //NOTE maybe a coherence check on the phone number can be usefull
+  if (PhoneNumberChecker(((unsigned char*)tmpbuff) + 7) == PHN_OK) {
+    strcpy(tmpbuff + 7 + PHONENUMBER_SIZE,"\"\\Allarme attivo");
+    sendATCommand(tmpbuff,aB_SEND_MGS);
+    etimer_set(&TempSendingTimer, TEMP_SENDING_TIME);
+    printf("Allarme attivo\r\n");
+  }
+  else printf("%s\r\n",NUM_NON_AMESSO_MSG);
+}
+
+void VoltageSensorHandler(struct sensors_sensor* sensor)
+{
+  //printf("Voltage:%d\r\n",sensor->value(SENSORS_READY));
 }

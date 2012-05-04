@@ -10,6 +10,10 @@ Table of contents
 
 3) NOT Allowed CODES
 
+4) How to actuate ON/OFF
+
+5) How to set temperature threshold
+
 
 1) Master Number SMS command
 When the eeprom is completaly erased and initialized with the 32 bit (4 bytes) checking cobe "BABE",
@@ -38,3 +42,25 @@ Each time from the Master number is sent a new allowed namber, the old one is ov
 
 
 3) 00 is NOT allowed
+
+4) How to actuate ON/OFF
+The codes 10,12,13 set on/off OUTA, OUTB,OUT3
+
+10 on            set OUTA on (case insensitive)
+11 on            set OUTB on (case insensitive)
+12 on            set OUTC on (case insensitive)
+
+10 off           set OUTA off (case insensitive)
+11 off           set OUTB off (case insensitive)
+12 off           set OUTC off (case insensitive)
+
+5) How to set temperature threshold
+To set the 2 Threashold (too high temp / too low temp) about the Temperature sensor
+The threshold are expressed with the precision of 1 degree.
+
+20 <lower temp threshold> (if Temperature is lower a message is sent to every allowed number)
+ex: 20 40 (if temperature is lower then 40 °C a message is sent to every allowed number)
+
+21 <higer temp threshold> (if Temperature is higher a message is sent to every allowed number)
+ex: 21 120 (if temperature is lower then 120 °C a message is sent to every allowed number)
+ 
