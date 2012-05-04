@@ -1,4 +1,5 @@
 atCommand_src = WismoManager.c CommandManager.c CommandList.c simple_atoi.c \
+command_NULL.c \
 command_AT.c \
 command_CPIN.c \
 command_CSQ.c \

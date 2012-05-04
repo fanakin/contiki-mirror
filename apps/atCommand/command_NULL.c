@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: CommandList.c,v 1.0 2012/04/06 17:00:51 fabiogiovagnini Exp $
+ * $Id: Command_THEN.c,v 1.0 2012/04/06 17:00:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
@@ -36,11 +36,11 @@
  *           $Revision: 1.0 $
  */
 /**
- * \addtogroup ATCommand Generic AT Command implementation
+ * \addtogroup GENCommand Generic Command implementation
  *
- * a generic AT command prepare a command with its parameters and send it
- * to the driver understanding. The driver understanding prepends the AT
- * strings or what the specific hardware expects and send really to the
+ * a generic command prepare a command with its parameters and send it
+ * to the driver understanding. The driver understanding 
+ * what the specific hardware expects and send really to the
  * device.
  *
  * @{
@@ -48,7 +48,7 @@
 
 /**
  * \file
- *         Implementation of the generic handler of an AT command to send
+ *         Implementation of the command to enable the Temperature Threshold handler
  * \author
  *         Fabio Giovagnini <fabio.giovagnini@aurion-tech.com>
  * 
@@ -56,19 +56,20 @@
 #include <string.h>
 
 #include "CommandDef.h"
-#include "command_AT.h"
-#include "dev/wismo218.h"
+#include "command_EREPP.h"
+#include "dev/eeprom.h"
 
 #ifdef CONTIKI_TARGET_ARNNANOM
 #include "printf.h" /* For printf() tiny*/
 #else
 #include <stdio.h> /* For printf() */
+#include "command_NULL.h"
 #endif
 
-#define NO_STATUS	0
+
 
 /**
- * \brief      Standard At Command
+ * \brief      Empty handler
  * \param cmd  pointer to arnGsmRemoteCommand_t structure of the command
  * \param data pointer to char string being the string including the parameters of the command
  * \return     NULL if the command doesn't need to dispatch an event, unsigned char* if it needs to dispatch an event.
@@ -84,29 +85,13 @@
  *             If an exception will occor a specific handler can be implemented
  * 
  */
-void* command_AT(void* cmd, void* data)
+void* command_NULL(void* cmd, void* data)
 {
-  arnGsmRemoteCommand_t* Command = cmd;
-  char* Params = data;
-  if (!Command) return NULL;
-  statusCode = NO_STATUS;
-  if (wismo218_sendCommand(Command->Command) < 0) {
-    printf("%s: error\r\n",Command->Command);
-  }
-  if (Params) {
-    if (wismo218_sendParams(Params) < 0) {
-      printf("%s - %s: error\r\n",Command->Command,Params);
-    }
-  }
-  if (wismo218_sendParams(CR) < 0) {
-    printf("%s - CR: error\r\n",Command->Command);
-  }
-  commandExitCode = 1;
-  return &commandExitCode;
+  return NULL;
 }
 
 /**
- * \brief      AT command generic response handler
+ * \brief      Empty response handler
  * \param cmd  pointer to arnGsmRemoteCommand_t structure of the command
  * \param data pointer to char string being the answer of the command
  * \return     NULL if the command doesn't need to dispatch an event and mno error occurs,
@@ -115,34 +100,10 @@ void* command_AT(void* cmd, void* data)
  * \retval 0   An error occurs; examine data to know exactly
  * \retval 1   Not yet implemented
  *
- *             This function is the handler for getting back the 
- *             The answer form the +CPIN command
- *
- *             READY answer is considered good response
- *             Other answers ar considerated ERROR
- *             See WA_DEV_WISMO_UGD_012 004 November 3, 2011 wismo user AT Command manual
- *             pag.66 par 3.6.3
  * 
  */
-void* response_AT(void* cmd, void* data, void* answer)
+void* response_NULL(void* cmd, void* data, void* answer)
 {
-  if (cmd == NULL) return NULL;
-  if (data) {
-    arnGsmRemoteCommand_t *Command = cmd;
-    char* Dt = data;
-    if (!strncmp(Command->Command,Dt,strlen(Command->Command))) {
-      Dt += strlen(Command->Command);
-      Dt += 2; //:<blank>
-      printf("%s\r\n",Dt);
-      if (answer) {
-	//char* Res = answer;
-	//strcpy(Res,Dt);
-      }
-      commandExitCode = 1;
-      return &commandExitCode;
-    }
-  }
-  //printf("No data available.\r\n");
   return NULL;
 }
 

@@ -86,6 +86,7 @@ typedef struct arnGsmRemoteResponse {
 #define TYPEVAL_MGL	1
 #define TYPEVAL_MGR	2
 #define TYPEVAL_MGD	3
+#define TYPEVAL_MGS	4
 /*
  *  if type == TYPEVAL_MGL
  *  for Param1 is meaningful index: the index of the message intgo the list
@@ -99,6 +100,10 @@ typedef struct arnGsmRemoteResponse {
  *  for Param1 is meaningless
  *  for Param2 is meaningfulless
  *  for Param3 is meaningful text: ex: "OK"
+ *  if type == TYPEVAL_MGS
+ *  for Param1 is meaningful index: it says the number of total message sent
+ *  for Param2 is meaningfulless
+ *  for Param3 is meaningful text: ex: "OK"; message sending report
  */
 #define REC_READ	0
 #define REC_UNREAD	1

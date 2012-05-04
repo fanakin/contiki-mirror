@@ -56,6 +56,7 @@
 #include <string.h>
 
 #include "CommandDef.h"
+#include "simple_atoi.h"
 #include "command_CMGS.h"
 #include "dev/wismo218.h"
 
@@ -162,9 +163,12 @@ void* response_CMGS(void* cmd, void* data, void* answer)
   char *token;
 
   if (cmd == NULL) return NULL;
+  if (answer == NULL) return NULL;
   if (data) {
     //arnGsmRemoteCommand_t *Command = cmd;
+    arnGsmRemoteResponse_t *res = answer;
     char* Dt = data;
+    res->type = TYPEVAL_MGS;
     switch (statusCode) {
       case NUMBER_TO_CALL_SENT_STATUS:
 	token = strsep(&Params,"\\");
@@ -195,13 +199,13 @@ void* response_CMGS(void* cmd, void* data, void* answer)
 	break;
       case TOTAL_MGS_NUM_RECIVED_STATUS:
 	printf("%s%s\r\n",CMGS_info_message_IT[CMGS_info_message_TOTAL_NUM], &(Dt[7]));
+	res->Param1.index = simple_atoi(Dt + 7);
 	statusCode = OK_ERROR_RECEIVED_STATUS;
 	break;
       case OK_ERROR_RECEIVED_STATUS:
 	printf("%s%s\r\n",CMGS_info_message_IT[CMGS_info_message_SENDING_REPORT],data);
-	if (answer) {
-	  // action to load meaningful information into answer structure
-	}
+	// action to load meaningful information into answer structure
+	strcpy(res->Param3.text,data);
 	statusCode = NO_STATUS;
 	break;
       default:

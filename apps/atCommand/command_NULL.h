@@ -26,7 +26,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $Id: command_AT.h,v 0.1 2012/04/06 16:50:51 fabiogiovagnini Exp $
+ * $Id: command_NULL.h,v 0.1 2012/04/06 16:50:51 fabiogiovagnini Exp $
  *
  * -----------------------------------------------------------------
  *
@@ -36,7 +36,7 @@
  *           $Revision: 1.0 $
  */
 /**
- * \defgroup ATCommand AT Command implementation
+ * \defgroup  GENCommand Generic Empty command implementation
  *
  * The target of this module is to supply an extendable way to
  * implement and manage at AT command to drive a GSM/GPRS module
@@ -45,11 +45,11 @@
 
 #include "contiki.h"
 
-#ifndef __COMMAND_AT_H__
-#define __COMMAND_AT_H__
+#ifndef __COMMAND_NULL_H__
+#define __COMMAND_NULL_H__
 
-void* command_AT(void*,void*);
-void* response_AT(void*,void*,void*);
+void* command_NULL(void*,void*);
+void* response_NULL(void*,void*,void*);
 
 #endif
 
