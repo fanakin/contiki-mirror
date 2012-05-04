@@ -49,6 +49,7 @@
 #include "dev/vib-sensor.h"
 #include "dev/halleffect-sensor.h"
 #include "dev/temperature-sensor.h"
+#include "dev/voltage-sensor.h"
 #include "dev/button-sensor.h"
 #include "dev/wismo218.h"
 #include "dev/sci3-putchar.h"
@@ -76,7 +77,7 @@ print_processes(struct process * const processes[])
 PROCINIT(&etimer_process);
 
 //SENSORS(&halleffect_sensor, &vib_sensor, &button_sensor);
-SENSORS(&halleffect_sensor,&temperature_sensor);
+SENSORS(&halleffect_sensor,&temperature_sensor,&voltage_sensor);
 /*---------------------------------------------------------------------------*/
 int
 os_main(void)
